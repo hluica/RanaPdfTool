@@ -21,7 +21,7 @@ public class MergeCommand(IPdfService pdfService, IImageService imageService) : 
 
         if (!Directory.Exists(sourceDir))
         {
-            AnsiConsole.MarkupLine($"[red][bold]Error:[/] Source directory not found: [underline]{Markup.Escape(sourceDir)}[/][/]");
+            AnsiConsole.MarkupLine($"[red][bold]Error:[/] Source directory not found - [/][underline]{Markup.Escape(sourceDir)}[/]");
             return 1;
         }
 

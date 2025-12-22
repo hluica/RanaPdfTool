@@ -17,7 +17,7 @@ public class ModifyCommand(IPdfService pdfService) : AsyncCommand<ModifySettings
 
         if (!File.Exists(inputFile) || !Path.GetExtension(inputFile).Equals(".pdf", StringComparison.CurrentCultureIgnoreCase))
         {
-            AnsiConsole.MarkupLine($"[red]Error:[/] Invalid PDF file: {inputFile}");
+            AnsiConsole.MarkupLine($"[red][bold]Error:[/] Invalid PDF file - [/]{Markup.Escape(inputFile)}");
             return 1;
         }
 
@@ -46,7 +46,7 @@ public class ModifyCommand(IPdfService pdfService) : AsyncCommand<ModifySettings
                         ));
                 });
 
-            AnsiConsole.MarkupLine($"[green]Modified file saved to:[/] {Markup.Escape(outputFile)}");
+            AnsiConsole.MarkupLine($"[green]Modified file saved to:[/] [underline]{Markup.Escape(outputFile)}[/]");
             return 0;
         }
         catch (Exception ex)

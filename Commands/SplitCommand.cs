@@ -17,7 +17,7 @@ public class SplitCommand(IPdfService pdfService) : AsyncCommand<SplitSettings>
 
         if (!File.Exists(inputFile) || !Path.GetExtension(inputFile).Equals(".pdf", StringComparison.CurrentCultureIgnoreCase))
         {
-            AnsiConsole.MarkupLine($"[red]Error:[/] Invalid PDF file: {Markup.Escape(inputFile)}");
+            AnsiConsole.MarkupLine($"[red][bold]Error:[/] Invalid PDF file - [/]{Markup.Escape(inputFile)}");
             return 1;
         }
 
