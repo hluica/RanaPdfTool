@@ -33,6 +33,8 @@ public class ModifyCommand(IPdfService pdfService) : AsyncCommand<ModifySettings
                     new TaskDescriptionColumn(),
                     new ProgressBarColumn(),
                     new PercentageColumn(),
+                    new SpinnerColumn(),
+                    new RemainingTimeColumn(),
                 ])
                 .StartAsync(async ctx =>
                 {

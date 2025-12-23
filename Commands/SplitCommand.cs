@@ -50,6 +50,8 @@ public class SplitCommand(IPdfService pdfService) : AsyncCommand<SplitSettings>
                     new TaskDescriptionColumn(),
                     new ProgressBarColumn(),
                     new PercentageColumn(),
+                    new SpinnerColumn(),
+                    new RemainingTimeColumn(),
                 ])
                 .StartAsync(async ctx =>
                 {
