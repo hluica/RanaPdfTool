@@ -1,4 +1,6 @@
-﻿using RanaPdfTool.Services.Interfaces;
+﻿using System.Collections.Concurrent;
+
+using RanaPdfTool.Services.Interfaces;
 using RanaPdfTool.Settings;
 using RanaPdfTool.Utils;
 
@@ -25,6 +27,8 @@ public class ModifyCommand(IPdfService pdfService) : AsyncCommand<ModifySettings
         var name = Path.GetFileNameWithoutExtension(inputFile);
         var outputFile = Path.Combine(dir, $"{name}_modified.pdf");
 
+        var errors = new ConcurrentBag<(string context, Exception exception)>();
+
         try
         {
             await AnsiConsole.Progress()
@@ -44,16 +48,32 @@ public class ModifyCommand(IPdfService pdfService) : AsyncCommand<ModifySettings
                         _pdfService.ResizePdfPages(
                             inputFile,
                             outputFile,
-                            (p) => task.Value = p
+                            onProgress: (p) => task.Value = p,
+                            onPageError: (pageNum, ex) => errors.Add(($"Page {pageNum}", ex))
                         ));
                 });
-
-            AnsiConsole.MarkupLine($"[green]Modified file saved to:[/] [underline]{Markup.Escape(outputFile)}[/]");
-            return 0;
         }
         catch (Exception ex)
         {
             AnsiConsole.WriteException(ex, ExceptionFormats.ShortenEverything);
+            return 1;
+        }
+
+        if (errors.IsEmpty)
+        {
+            AnsiConsole.MarkupLine($"[green]Modified file saved to:[/] [underline]{Markup.Escape(outputFile)}[/]");
+            return 0;
+        }
+        else
+        {
+            AnsiConsole.MarkupLine($"[yellow]Process completed with {errors.Count} errors[/].");
+            AnsiConsole.Write(new Rule("[red]Page Failures[/]").LeftJustified());
+            foreach (var (ctxStr, exception) in errors)
+            {
+                AnsiConsole.MarkupLine($"[gray bold]Context:[/] {Markup.Escape(ctxStr)}");
+                AnsiConsole.WriteException(exception, ExceptionFormats.ShortenEverything);
+                AnsiConsole.WriteLine();
+            }
             return 1;
         }
     }

@@ -1,4 +1,6 @@
-﻿using NaturalSort.Extension;
+﻿using System.Collections.Concurrent;
+
+using NaturalSort.Extension;
 
 using RanaPdfTool.Services.Interfaces;
 using RanaPdfTool.Settings;
@@ -59,13 +61,15 @@ public class MergeCommand(IPdfService pdfService, IImageService imageService) : 
             string? parentDir = Path.GetDirectoryName(rawDestPath);
             if (!string.IsNullOrEmpty(parentDir) && !Directory.Exists(parentDir))
             {
-                // 使用 CliGuard 捕获创建文件夹时的权限或IO错误
-                // 这里使用 Exception 作为泛型，因为 CreateDirectory 可能抛出多种 IO/Auth 异常
-                bool createDirOk = CliGuard.TryRun<Exception>(
-                    () => Directory.CreateDirectory(parentDir),
-                    $"Failed to create directory: {parentDir}. Check permissions.");
-
-                if (!createDirOk) return 1;
+                try
+                {
+                    Directory.CreateDirectory(parentDir);
+                }
+                catch (Exception ex)
+                {
+                    AnsiConsole.WriteException(ex, ExceptionFormats.ShortenEverything);
+                    return 1;
+                }
             }
 
             finalPdfPath = rawDestPath;
@@ -144,11 +148,10 @@ public class MergeCommand(IPdfService pdfService, IImageService imageService) : 
 
         var finalPaths = new List<string>();
         var tempFiles = new List<string>();
-        bool hasError = false;
+        var errors = new ConcurrentBag<(string context, Exception exception)>();
 
         try
         {
-            // 启动进度条上下文
             await AnsiConsole.Progress()
                 .AutoClear(false)
                 .Columns([
@@ -160,36 +163,47 @@ public class MergeCommand(IPdfService pdfService, IImageService imageService) : 
                 ])
                 .StartAsync(async ctx =>
                 {
-                    // 阶段 1: 预处理图片
+                    // --- 阶段 1: 预处理图片 ---
                     var prepTask = ctx.AddTask("[green]Processing images...[/]", maxValue: 100);
-
                     int totalFiles = allFiles.Count;
                     int processedCount = 0;
 
-                    // 注意：这里我们不能把循环放入 Task.Run，因为我们要操作 finalPaths 和 tempFiles 集合
                     foreach (var file in allFiles)
                     {
-                        var ext = Path.GetExtension(file).ToLower();
-
-                        if ((ext == ".png") && !settings.Raw)
+                        try
                         {
-                            var tempJpg = _imageService.ConvertPngToTempJpeg(file);
-                            finalPaths.Add(tempJpg);
-                            tempFiles.Add(tempJpg);
-                        }
-                        else
-                        {
-                            finalPaths.Add(file);
-                        }
+                            var ext = Path.GetExtension(file).ToLower();
 
-                        processedCount++;
-                        prepTask.Value = (double)processedCount / totalFiles * 100;
+                            if ((ext == ".png") && !settings.Raw)
+                            {
+                                var tempJpg = _imageService.ConvertPngToTempJpeg(file);
+                                finalPaths.Add(tempJpg);
+                                tempFiles.Add(tempJpg);
+                            }
+                            else
+                            {
+                                finalPaths.Add(file);
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            // 捕获单个图片预处理错误，不中断循环
+                            errors.Add((Path.GetFileName(file), ex));
+                        }
+                        finally
+                        {
+                            processedCount++;
+                            prepTask.Value = (double)processedCount / totalFiles * 100;
+                        }
                     }
 
-                    // 标记第一阶段完成
                     prepTask.StopTask();
 
-                    // 阶段 2: 生成 PDF
+                    // 如果所有文件都处理失败，则无需进行第二步
+                    if (finalPaths.Count == 0)
+                        return;
+
+                    // --- 阶段 2: 生成 PDF ---
                     var mergeTask = ctx.AddTask("[green]Generating PDF...[/]", maxValue: 100);
 
                     await Task.Run(() =>
@@ -197,38 +211,57 @@ public class MergeCommand(IPdfService pdfService, IImageService imageService) : 
                             finalPaths,
                             finalPdfPath,
                             settings.Resize,
-                            (p) => mergeTask.Value = p
+                            onProgress: (p) => mergeTask.Value = p,
+                            onItemError: (fileName, ex) => errors.Add((fileName, ex))
                         ));
 
-                    // 标记第二阶段完成
                     mergeTask.StopTask();
                 });
-
-            AnsiConsole.MarkupLine($"[green]Successfully created:[/] [underline]{Markup.Escape(finalPdfPath)}[/]");
         }
         catch (Exception ex)
         {
+            // 捕获 Progress 上下文之外的致命错误
             AnsiConsole.WriteException(ex, ExceptionFormats.ShortenEverything);
-            hasError = true;
+            return 1;
         }
         finally
         {
-            // 清理临时文件（通常很快，用 Status 即可，或者如果不耗时直接删）
+            // 清理临时文件
             if (tempFiles.Count != 0)
             {
-                AnsiConsole
-                    .Status()
-                    .Start("Cleaning up...", _ =>
+                AnsiConsole.Status().Start("Cleaning up...", _ =>
+                {
+                    foreach (var temp in tempFiles)
                     {
-                        foreach (var temp in tempFiles)
-                        {
-                            if (File.Exists(temp))
-                                File.Delete(temp);
-                        }
-                    });
+                        if (File.Exists(temp))
+                            File.Delete(temp);
+                    }
+                });
             }
         }
 
-        return hasError ? 1 : 0;
+        // --- 结果汇总 ---
+        if (errors.IsEmpty)
+        {
+            AnsiConsole.MarkupLine($"[green]Successfully created:[/] [underline]{Markup.Escape(finalPdfPath)}[/]");
+            return 0;
+        }
+        else
+        {
+            // 如果生成了部分文件，提示位置
+            if (File.Exists(finalPdfPath))
+                AnsiConsole.MarkupLine($"[yellow]PDF created with warnings at:[/] [underline]{Markup.Escape(finalPdfPath)}[/]");
+
+            AnsiConsole.MarkupLine($"[yellow]Completed with {errors.Count} errors[/].");
+            AnsiConsole.Write(new Rule("[red]Failures[/]").LeftJustified());
+
+            foreach (var (ctxName, exception) in errors)
+            {
+                AnsiConsole.MarkupLine($"[gray bold]Item:[/] [underline]{Markup.Escape(ctxName)}[/]");
+                AnsiConsole.WriteException(exception, ExceptionFormats.ShortenEverything);
+                AnsiConsole.WriteLine();
+            }
+            return 1;
+        }
     }
 }

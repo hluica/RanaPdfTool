@@ -38,7 +38,7 @@ public static class PathHelper
 
             // 防止极端情况下的死循环
             if (counter > 10000)
-                throw new IOException($"Unable to find a unique file path for {fullPath} after 10000 attempts.");
+                throw new InvalidOperationException($"CRITICAL: Potential infinite loop detected. Unable to find a unique file path for {fullPath} after 10000 attempts.");
         }
 
         return newPath;
