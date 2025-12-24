@@ -8,7 +8,7 @@ namespace RanaPdfTool.Services;
 
 public class ImageService : IImageService
 {
-    public string ConvertPngToTempJpeg(string inputPath)
+    public string ConvertPngToTempJpeg(string inputPath, int quality)
     {
         using var image = Image.Load(inputPath);
 
@@ -16,19 +16,19 @@ public class ImageService : IImageService
 
         var encoder = new JpegEncoder
         {
-            Quality = 95
+            Quality = quality
         };
 
         image.Save(tempFile, encoder);
         return tempFile;
     }
 
-    public void SaveBytesAsJpeg(byte[] imageBytes, string outputPath)
+    public void SaveBytesAsJpeg(byte[] imageBytes, string outputPath, int quality)
     {
         using var image = Image.Load(imageBytes);
         var encoder = new JpegEncoder
         {
-            Quality = 95
+            Quality = quality
         };
         image.Save(outputPath, encoder);
     }

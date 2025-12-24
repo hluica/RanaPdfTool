@@ -16,6 +16,7 @@ public interface IPdfService
     void ExtractImages(
         string inputPdfPath,
         string outputDirectory,
+        int quality,
         bool rawMode,
         Action<double>? onProgress = null,
         Action<int, Exception>? onPageError = null);

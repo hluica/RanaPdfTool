@@ -18,6 +18,8 @@ public class MergeCommand(IPdfService pdfService, IImageService imageService) : 
 
     public override async Task<int> ExecuteAsync(CommandContext context, MergeSettings settings, CancellationToken cancellationToken)
     {
+        int jpgQuality = settings.Quality ?? 90;
+
         // 1. 解析并验证源路径 (Source)
         var (sourceOk, sourceDir) = CliGuard.TryRun<string, ArgumentException>(
             () => PathHelper.ResolveAbsolutePath(settings.SourceDir),
@@ -176,7 +178,7 @@ public class MergeCommand(IPdfService pdfService, IImageService imageService) : 
 
                             if ((ext == ".png") && !settings.Raw)
                             {
-                                var tempJpg = _imageService.ConvertPngToTempJpeg(file);
+                                var tempJpg = _imageService.ConvertPngToTempJpeg(file, jpgQuality);
                                 finalPaths.Add(tempJpg);
                                 tempFiles.Add(tempJpg);
                             }

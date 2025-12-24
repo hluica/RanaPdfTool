@@ -15,6 +15,8 @@ public class SplitCommand(IPdfService pdfService) : AsyncCommand<SplitSettings>
 
     public override async Task<int> ExecuteAsync(CommandContext context, SplitSettings settings, CancellationToken cancellationToken)
     {
+        int jpgQuality = settings.Quality ?? 90;
+
         var inputFile = PathHelper.ResolveAbsolutePath(settings.FilePath);
 
         if (!File.Exists(inputFile) || !Path.GetExtension(inputFile).Equals(".pdf", StringComparison.CurrentCultureIgnoreCase))
@@ -65,6 +67,7 @@ public class SplitCommand(IPdfService pdfService) : AsyncCommand<SplitSettings>
                         _pdfService.ExtractImages(
                             inputFile,
                             finalOutputDir,
+                            jpgQuality,
                             settings.Raw,
                             onProgress: (p) => task.Value = p,
                             onPageError: (pageNum, ex) => errors.Add(($"Page {pageNum}", ex))

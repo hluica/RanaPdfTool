@@ -142,6 +142,7 @@ public class PdfService(IImageService imageService) : IPdfService
     public void ExtractImages(
         string inputPdfPath,
         string outputDirectory,
+        int quality,
         bool rawMode,
         Action<double>? onProgress = null,
         Action<int, Exception>? onPageError = null)
@@ -216,7 +217,7 @@ public class PdfService(IImageService imageService) : IPdfService
                                 if (isJpeg)
                                     File.WriteAllBytes($"{baseOutputPath}.jpg", imageBytes);
                                 else
-                                    _imageService.SaveBytesAsJpeg(imageBytes, $"{baseOutputPath}.jpg");
+                                    _imageService.SaveBytesAsJpeg(imageBytes, $"{baseOutputPath}.jpg", quality);
                             }
                         }
                         catch (Exception imgEx)
