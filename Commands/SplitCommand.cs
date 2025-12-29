@@ -26,15 +26,9 @@ public class SplitCommand(IPdfService pdfService) : AsyncCommand<SplitSettings>
         }
 
         // 确定输出基础目录
-        string baseOutputDir;
-        if (!string.IsNullOrEmpty(settings.DestDir))
-        {
-            baseOutputDir = PathHelper.ResolveAbsolutePath(settings.DestDir);
-        }
-        else
-        {
-            baseOutputDir = Path.GetDirectoryName(inputFile)!;
-        }
+        string baseOutputDir = !string.IsNullOrEmpty(settings.DestDir)
+            ? PathHelper.ResolveAbsolutePath(settings.DestDir)
+            : Path.GetDirectoryName(inputFile)!;
 
         // 处理子文件夹逻辑
         string finalOutputDir = baseOutputDir;

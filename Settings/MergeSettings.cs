@@ -29,19 +29,9 @@ public class MergeSettings : CommandSettings
     public bool Resize { get; set; }
 
     public override ValidationResult Validate()
-    {
-        // 互斥检查：如果 Raw 为 true 且 Quality 有值，则报错
-        if (Raw && Quality.HasValue)
-        {
-            return ValidationResult.Error("The '--quality' option cannot be used with '--raw'.");
-        }
-
-        // 范围检查
-        if (Quality.HasValue && (Quality.Value < 1 || Quality.Value > 100))
-        {
-            return ValidationResult.Error("Quality must be between 1 and 100.");
-        }
-
-        return ValidationResult.Success();
-    }
+        => Raw && Quality.HasValue
+            ? ValidationResult.Error("The '--quality' option cannot be used with '--raw'.")
+            : Quality.HasValue && (Quality.Value < 1 || Quality.Value > 100)
+                ? ValidationResult.Error("Quality must be between 1 and 100.")
+                : ValidationResult.Success();
 }

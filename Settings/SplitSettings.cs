@@ -29,17 +29,9 @@ public class SplitSettings : CommandSettings
     public bool Raw { get; set; }
 
     public override ValidationResult Validate()
-    {
-        if (Raw && Quality.HasValue)
-        {
-            return ValidationResult.Error("The '--quality' option cannot be used with '--raw'.");
-        }
-
-        if (Quality.HasValue && (Quality.Value < 1 || Quality.Value > 100))
-        {
-            return ValidationResult.Error("Quality must be between 1 and 100.");
-        }
-
-        return ValidationResult.Success();
-    }
+        => Raw && Quality.HasValue
+            ? ValidationResult.Error("The '--quality' option cannot be used with '--raw'.")
+            : Quality.HasValue && (Quality.Value < 1 || Quality.Value > 100)
+                ? ValidationResult.Error("Quality must be between 1 and 100.")
+                : ValidationResult.Success();
 }
