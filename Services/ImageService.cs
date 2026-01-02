@@ -1,7 +1,6 @@
 ﻿using RanaPdfTool.Services.Interfaces;
 
 using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.Formats;
 using SixLabors.ImageSharp.Formats.Jpeg;
 
 namespace RanaPdfTool.Services;
@@ -12,7 +11,7 @@ public class ImageService : IImageService
     {
         using var image = Image.Load(inputPath);
 
-        var tempFile = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString() + ".jpg");
+        string tempFile = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString() + ".jpg");
 
         var encoder = new JpegEncoder
         {
@@ -40,7 +39,7 @@ public class ImageService : IImageService
         try
         {
             // 尝试嗅探格式
-            IImageFormat? format = Image.DetectFormat(imageBytes);
+            var format = Image.DetectFormat(imageBytes);
             if (format != null)
             {
                 // 获取最常见的扩展名 (如 png, bmp, gif)

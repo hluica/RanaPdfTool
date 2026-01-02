@@ -68,7 +68,7 @@ public class PdfService(IImageService imageService) : IPdfService
 
         for (int i = 0; i < totalCount; i++)
         {
-            var path = imagePaths[i];
+            string path = imagePaths[i];
 
             try
             {
@@ -175,7 +175,7 @@ public class PdfService(IImageService imageService) : IPdfService
                             string fileBaseName = $"page_{i}_img_{imgIndex}";
 
                             var imageXObject = new PdfImageXObject(stream);
-                            var imageBytes = imageXObject.GetImageBytes();
+                            byte[] imageBytes = imageXObject.GetImageBytes();
                             if (imageBytes == null || imageBytes.Length == 0)
                                 continue;
 

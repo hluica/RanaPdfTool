@@ -48,7 +48,7 @@ public static class Program
     private static string GetAppVersion()
     {
         var assembly = Assembly.GetExecutingAssembly();
-        var version = assembly
+        string? version = assembly
             .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?
             .InformationalVersion;
         return !string.IsNullOrWhiteSpace(version) ? version : "unknown";

@@ -102,7 +102,8 @@ public class MergeCommand(IPdfService pdfService, IImageService imageService) : 
                     () => Directory.CreateDirectory(rawDestPath),
                     $"Failed to create destination directory: {rawDestPath}. Check permissions.");
 
-                if (!createDirOk) return 1;
+                if (!createDirOk)
+                    return 1;
             }
 
             // 计算文件名：默认为源文件夹名称
@@ -136,7 +137,7 @@ public class MergeCommand(IPdfService pdfService, IImageService imageService) : 
         var naturalComparer = StringComparer.OrdinalIgnoreCase.WithNaturalSort();
 
         // 获取所有图片文件，使用自然排序
-        var extensions = new[] { ".jpg", ".jpeg", ".png" };
+        string[] extensions = [".jpg", ".jpeg", ".png"];
         var allFiles = Directory.GetFiles(sourceDir, "*.*", SearchOption.AllDirectories)
             .Where(f => extensions.Contains(Path.GetExtension(f).ToLower()))
             .OrderBy(f => f, naturalComparer) // 按名称排序
@@ -170,15 +171,15 @@ public class MergeCommand(IPdfService pdfService, IImageService imageService) : 
                     int totalFiles = allFiles.Count;
                     int processedCount = 0;
 
-                    foreach (var file in allFiles)
+                    foreach (string? file in allFiles)
                     {
                         try
                         {
-                            var ext = Path.GetExtension(file).ToLower();
+                            string ext = Path.GetExtension(file).ToLower();
 
                             if ((ext == ".png") && !settings.Raw)
                             {
-                                var tempJpg = _imageService.ConvertPngToTempJpeg(file, jpgQuality);
+                                string tempJpg = _imageService.ConvertPngToTempJpeg(file, jpgQuality);
                                 finalPaths.Add(tempJpg);
                                 tempFiles.Add(tempJpg);
                             }
@@ -233,7 +234,7 @@ public class MergeCommand(IPdfService pdfService, IImageService imageService) : 
             {
                 AnsiConsole.Status().Start("Cleaning up...", _ =>
                 {
-                    foreach (var temp in tempFiles)
+                    foreach (string temp in tempFiles)
                     {
                         if (File.Exists(temp))
                             File.Delete(temp);

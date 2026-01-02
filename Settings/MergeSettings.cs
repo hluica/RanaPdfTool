@@ -31,7 +31,7 @@ public class MergeSettings : CommandSettings
     public override ValidationResult Validate()
         => Raw && Quality.HasValue
             ? ValidationResult.Error("The '--quality' option cannot be used with '--raw'.")
-            : Quality.HasValue && (Quality.Value < 1 || Quality.Value > 100)
+            : (Quality.HasValue && (Quality.Value < 1 || Quality.Value > 100)
                 ? ValidationResult.Error("Quality must be between 1 and 100.")
-                : ValidationResult.Success();
+                : ValidationResult.Success());
 }

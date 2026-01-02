@@ -17,7 +17,7 @@ public class SplitCommand(IPdfService pdfService) : AsyncCommand<SplitSettings>
     {
         int jpgQuality = settings.Quality ?? 90;
 
-        var inputFile = PathHelper.ResolveAbsolutePath(settings.FilePath);
+        string inputFile = PathHelper.ResolveAbsolutePath(settings.FilePath);
 
         if (!File.Exists(inputFile) || !Path.GetExtension(inputFile).Equals(".pdf", StringComparison.CurrentCultureIgnoreCase))
         {

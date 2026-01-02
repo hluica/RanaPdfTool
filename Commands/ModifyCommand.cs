@@ -15,7 +15,7 @@ public class ModifyCommand(IPdfService pdfService) : AsyncCommand<ModifySettings
 
     public override async Task<int> ExecuteAsync(CommandContext context, ModifySettings settings, CancellationToken cancellationToken)
     {
-        var inputFile = PathHelper.ResolveAbsolutePath(settings.FilePath);
+        string inputFile = PathHelper.ResolveAbsolutePath(settings.FilePath);
 
         if (!File.Exists(inputFile) || !Path.GetExtension(inputFile).Equals(".pdf", StringComparison.CurrentCultureIgnoreCase))
         {
@@ -23,9 +23,9 @@ public class ModifyCommand(IPdfService pdfService) : AsyncCommand<ModifySettings
             return 1;
         }
 
-        var dir = Path.GetDirectoryName(inputFile)!;
-        var name = Path.GetFileNameWithoutExtension(inputFile);
-        var outputFile = Path.Combine(dir, $"{name}_modified.pdf");
+        string dir = Path.GetDirectoryName(inputFile)!;
+        string name = Path.GetFileNameWithoutExtension(inputFile);
+        string outputFile = Path.Combine(dir, $"{name}_modified.pdf");
 
         var errors = new ConcurrentBag<(string context, Exception exception)>();
 
