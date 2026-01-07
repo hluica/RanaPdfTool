@@ -17,14 +17,12 @@ public class PdfService(IImageService imageService) : IPdfService
     // 使用 A4 宽度作为需要固定页面宽度时的目标宽度
     private const float TargetPageWidth = 595f;
 
-    // 用于承载返回参数的记录结构体
-    private readonly record struct PageTransform(
-        Rectangle NewBox,
-        double ScaleX, double SkewY, double SkewX,
-        double ScaleY, double ShiftX, double ShiftY);
-
     // 工具函数：返回“缩放单个页面内容和边界到指定宽度”所需几何变换参数
-    private static PageTransform ComputePageTransform(Rectangle originalBox, float targetWidth)
+    private static
+        (Rectangle newbox,
+        double scaleX, double skewY, double skewX,
+        double scaleY, double shiftX, double shiftY)
+        ComputePageTransform(Rectangle originalBox, float targetWidth)
     {
         float width = originalBox.GetWidth();
         float height = originalBox.GetHeight();
@@ -32,7 +30,7 @@ public class PdfService(IImageService imageService) : IPdfService
         float lly = originalBox.GetY();
 
         if (width <= 0)
-            return new PageTransform(originalBox, 1, 0, 0, 1, 0, 0);
+            return (originalBox, 1, 0, 0, 1, 0, 0);
 
         // 1. 计算缩放
         float scale = targetWidth / width;
@@ -46,7 +44,7 @@ public class PdfService(IImageService imageService) : IPdfService
         float shiftY = -lly * scale;
 
         // 返回计算结果
-        return new PageTransform(newBox, scale, 0, 0, scale, shiftX, shiftY);
+        return (newBox, scale, 0, 0, scale, shiftX, shiftY);
     }
 
     public void MergeImagesToPdf(
