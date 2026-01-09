@@ -160,6 +160,7 @@ public class MergeCommand(IPdfService pdfService, IImageService imageService) : 
 
         var tempFiles = new List<string>();
         var errors = new ConcurrentBag<(string context, Exception exception)>();
+        bool hasCriticalFailure = false;
 
         try
         {
@@ -239,8 +240,8 @@ public class MergeCommand(IPdfService pdfService, IImageService imageService) : 
         }
         catch (Exception ex)
         {
-            AnsiConsole.WriteException(ex, ExceptionFormats.ShortenEverything);
-            return 1;
+            errors.Add(("CRITICAL EXECUTION ERROR", ex));
+            hasCriticalFailure = true;
         }
         finally
         {
@@ -271,6 +272,9 @@ public class MergeCommand(IPdfService pdfService, IImageService imageService) : 
                 AnsiConsole.MarkupLine($"[yellow]PDF created with warnings at:[/] [underline]{Markup.Escape(finalPdfPath)}[/]");
 
             AnsiConsole.MarkupLine($"[yellow]Completed with {errors.Count} errors[/].");
+            if (hasCriticalFailure)
+                AnsiConsole.MarkupLine("[red bold]Including CRITICAL ERROR.[/]");
+
             AnsiConsole.Write(new Rule("[red]Failures[/]").LeftJustified());
 
             foreach (var (ctxName, exception) in errors)

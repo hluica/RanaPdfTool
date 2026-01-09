@@ -41,6 +41,7 @@ public class SplitCommand(IPdfService pdfService) : AsyncCommand<SplitSettings>
         Directory.CreateDirectory(finalOutputDir);
 
         var errors = new ConcurrentBag<(string context, Exception exception)>();
+        bool hasCriticalFailure = false;
 
         try
         {
@@ -70,10 +71,8 @@ public class SplitCommand(IPdfService pdfService) : AsyncCommand<SplitSettings>
         }
         catch (Exception ex)
         {
-            // 这里的 catch 针对的是诸如文件无法打开等致命错误
-            AnsiConsole.MarkupLine($"[red][bold]Fatal error accessing file:[/] [underline]{Markup.Escape(inputFile)}[/][/]");
-            AnsiConsole.WriteException(ex, ExceptionFormats.ShortenEverything);
-            return 1;
+            errors.Add(("CRITICAL EXECUTION ERROR", ex));
+            hasCriticalFailure = true;
         }
 
         if (errors.IsEmpty)
@@ -84,6 +83,8 @@ public class SplitCommand(IPdfService pdfService) : AsyncCommand<SplitSettings>
         else
         {
             AnsiConsole.MarkupLine($"[yellow]Extraction completed with {errors.Count} errors[/].");
+            if (hasCriticalFailure)
+                AnsiConsole.MarkupLine("[red bold]Including CRITICAL ERROR.[/]");
             AnsiConsole.Write(new Rule("[red]Extraction Failures[/]").LeftJustified());
             foreach (var (ctxStr, exception) in errors)
             {

@@ -28,6 +28,7 @@ public class ModifyCommand(IPdfService pdfService) : AsyncCommand<ModifySettings
         string outputFile = Path.Combine(dir, $"{name}_modified.pdf");
 
         var errors = new ConcurrentBag<(string context, Exception exception)>();
+        bool hasCriticalFailure = false;
 
         try
         {
@@ -55,8 +56,8 @@ public class ModifyCommand(IPdfService pdfService) : AsyncCommand<ModifySettings
         }
         catch (Exception ex)
         {
-            AnsiConsole.WriteException(ex, ExceptionFormats.ShortenEverything);
-            return 1;
+            errors.Add(("CRITICAL EXECUTION ERROR", ex));
+            hasCriticalFailure = true;
         }
 
         if (errors.IsEmpty)
@@ -67,6 +68,8 @@ public class ModifyCommand(IPdfService pdfService) : AsyncCommand<ModifySettings
         else
         {
             AnsiConsole.MarkupLine($"[yellow]Process completed with {errors.Count} errors[/].");
+            if (hasCriticalFailure)
+                AnsiConsole.MarkupLine("[red bold]Including CRITICAL ERROR.[/]");
             AnsiConsole.Write(new Rule("[red]Page Failures[/]").LeftJustified());
             foreach (var (ctxStr, exception) in errors)
             {
