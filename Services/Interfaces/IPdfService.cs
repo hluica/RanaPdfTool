@@ -1,11 +1,14 @@
-﻿namespace RanaPdfTool.Services.Interfaces;
+﻿using RanaPdfTool.Models;
+
+namespace RanaPdfTool.Services.Interfaces;
 
 public interface IPdfService
 {
     void MergeImagesToPdf(
-        List<string> imagePaths,
+        DirectoryNode rootNode,
         string outputPdfPath,
         bool doResize,
+        int totalFilesExpectation,
         Action<double>? onProgress = null,
         Action<string, Exception>? onItemError = null);
     void ResizePdfPages(

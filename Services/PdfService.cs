@@ -2,10 +2,12 @@
 using iText.Kernel.Geom;
 using iText.Kernel.Pdf;
 using iText.Kernel.Pdf.Canvas;
+using iText.Kernel.Pdf.Navigation;
 using iText.Kernel.Pdf.Xobject;
 using iText.Layout;
 using iText.Layout.Element;
 
+using RanaPdfTool.Models;
 using RanaPdfTool.Services.Interfaces;
 
 namespace RanaPdfTool.Services;
@@ -48,9 +50,10 @@ public class PdfService(IImageService imageService) : IPdfService
     }
 
     public void MergeImagesToPdf(
-        List<string> imagePaths,
+        DirectoryNode rootNode,
         string outputPdfPath,
         bool doResize,
+        int totalFilesExpectation,
         Action<double>? onProgress = null,
         Action<string, Exception>? onItemError = null)
     {
@@ -61,43 +64,85 @@ public class PdfService(IImageService imageService) : IPdfService
         // 移除默认边距
         doc.SetMargins(0, 0, 0, 0);
 
-        // 配置进度回调
-        int totalCount = imagePaths.Count;
+        // 获取 PDF 的根书签对象
+        var rootOutline = pdfDoc.GetOutlines(false);
 
-        for (int i = 0; i < totalCount; i++)
+        // 用于在递归中追踪进度
+        int processedCount = 0;
+
+        // 开始递归处理
+        _ = ProcessNode(rootNode, pdfDoc, rootOutline, isRoot: true);
+
+        // --- 内部递归函数 ---
+        // 返回值：该节点产生的（或其子节点产生的）第一页，用于设置父级书签跳转目标
+        PdfPage? ProcessNode(DirectoryNode node, PdfDocument pdf, PdfOutline parentOutline, bool isRoot)
         {
-            string path = imagePaths[i];
+            PdfOutline? currentOutline = null;
+            PdfPage? firstPageOfNode = null;
 
-            try
+            // 1. 创建书签 (如果不是根节点)
+            if (!isRoot)
+                currentOutline = parentOutline.AddOutline(node.Name);
+            else
+                // 根节点直接挂载在文档根上，不创建视觉书签
+                currentOutline = parentOutline;
+
+            // 2. 处理当前节点的文件
+            foreach (string path in node.Files)
             {
-                var imageData = ImageDataFactory.Create(path);
-                var image = new Image(imageData);
-
-                float imgWidth = imageData.GetWidth();
-                float imgHeight = imageData.GetHeight();
-
-                var originalSize = new PageSize(imgWidth, imgHeight);
-                var page = pdfDoc.AddNewPage(originalSize);
-
-                if (doResize)
+                try
                 {
-                    var (newBox, a, b, c, d, e, f) = ComputePageTransform(originalSize, TargetPageWidth);
-                    page.SetMediaBox(newBox);
-                    page.SetCropBox(newBox);
-                    new PdfCanvas(page).ConcatMatrix(a, b, c, d, e, f);
+                    var imageData = ImageDataFactory.Create(path);
+                    var image = new Image(imageData);
+
+                    float imgWidth = imageData.GetWidth();
+                    float imgHeight = imageData.GetHeight();
+
+                    var originalSize = new PageSize(imgWidth, imgHeight);
+                    var page = pdf.AddNewPage(originalSize);
+
+                    // 记录该节点的第一页
+                    firstPageOfNode ??= page;
+
+                    if (doResize)
+                    {
+                        var (newBox, a, b, c, d, e, f) = ComputePageTransform(originalSize, TargetPageWidth);
+                        page.SetMediaBox(newBox);
+                        page.SetCropBox(newBox);
+                        new PdfCanvas(page).ConcatMatrix(a, b, c, d, e, f);
+                    }
+
+                    var canvas = new PdfCanvas(page);
+                    canvas.AddXObjectFittedIntoRectangle(image.GetXObject(), new Rectangle(0, 0, imgWidth, imgHeight));
                 }
-
-                var canvas = new PdfCanvas(page);
-                canvas.AddXObjectFittedIntoRectangle(image.GetXObject(), new Rectangle(0, 0, imgWidth, imgHeight));
+                catch (Exception ex)
+                {
+                    onItemError?.Invoke(System.IO.Path.GetFileName(path), ex);
+                }
+                finally
+                {
+                    processedCount++;
+                    if (totalFilesExpectation > 0)
+                        onProgress?.Invoke((double)processedCount / totalFilesExpectation * 100);
+                }
             }
-            catch (Exception ex)
+
+            // 3. 处理子文件夹
+            foreach (var childNode in node.Children)
             {
-                // 错误回调，包含错误文件信息
-                onItemError?.Invoke(System.IO.Path.GetFileName(path), ex);
+                // 递归调用，将当前书签作为父级
+                var childPage = ProcessNode(childNode, pdf, currentOutline, isRoot: false);
+
+                // 如果当前文件夹没有文件，尝试使用子文件夹的第一页作为当前文件夹的跳转目标
+                firstPageOfNode ??= childPage;
             }
 
-            // 进度回调
-            onProgress?.Invoke((double)(i + 1) / totalCount * 100);
+            // 4. 设置书签跳转目标
+            // 只有当我们创建了新书签 (!isRoot) 且找到了目标页面时才设置
+            if (!isRoot && currentOutline != null && firstPageOfNode != null)
+                currentOutline.AddDestination(PdfExplicitDestination.CreateFit(firstPageOfNode));
+
+            return firstPageOfNode;
         }
     }
 

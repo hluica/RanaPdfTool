@@ -2,6 +2,7 @@
 
 using NaturalSort.Extension;
 
+using RanaPdfTool.Models;
 using RanaPdfTool.Services.Interfaces;
 using RanaPdfTool.Settings;
 using RanaPdfTool.Utils;
@@ -136,20 +137,27 @@ public class MergeCommand(IPdfService pdfService, IImageService imageService) : 
         // 配置自然排序比较器
         var naturalComparer = StringComparer.OrdinalIgnoreCase.WithNaturalSort();
 
-        // 获取所有图片文件，使用自然排序
-        string[] extensions = [".jpg", ".jpeg", ".png"];
-        var allFiles = Directory.GetFiles(sourceDir, "*.*", SearchOption.AllDirectories)
-            .Where(f => extensions.Contains(Path.GetExtension(f).ToLower()))
-            .OrderBy(f => f, naturalComparer) // 按名称排序
-            .ToList();
+        AnsiConsole.MarkupLine("[gray]Scanning directory structure...[/]");
 
-        if (allFiles.Count == 0)
+        DirectoryNode rootNode;
+        try
+        {
+            rootNode = NodeHelper.BuildDirectoryTree(new DirectoryInfo(sourceDir), naturalComparer);
+        }
+        catch (Exception ex)
+        {
+            AnsiConsole.MarkupLine($"[red]Error scanning files:[/] {ex.Message}");
+            return 1;
+        }
+
+        int totalFiles = rootNode.TotalFileCount();
+
+        if (totalFiles == 0)
         {
             AnsiConsole.MarkupLine("[yellow]No images found in source directory.[/]");
             return 0;
         }
 
-        var finalPaths = new List<string>();
         var tempFiles = new List<string>();
         var errors = new ConcurrentBag<(string context, Exception exception)>();
 
@@ -167,43 +175,50 @@ public class MergeCommand(IPdfService pdfService, IImageService imageService) : 
                 .StartAsync(async ctx =>
                 {
                     // --- 阶段 1: 预处理图片 ---
+                    // 我们需要遍历树结构，并在必要时更新树中的文件路径 (PNG -> JPG)
                     var prepTask = ctx.AddTask("[green]Processing images...[/]", maxValue: 100);
-                    int totalFiles = allFiles.Count;
                     int processedCount = 0;
 
-                    foreach (string? file in allFiles)
-                    {
-                        try
-                        {
-                            string ext = Path.GetExtension(file).ToLower();
+                    // 获取树中所有的文件列表引用，以便进行修改
+                    var allFileLists = NodeHelper.GetAllFileLists(rootNode).ToList();
 
-                            if ((ext == ".png") && !settings.Raw)
-                            {
-                                string tempJpg = _imageService.ConvertPngToTempJpeg(file, jpgQuality);
-                                finalPaths.Add(tempJpg);
-                                tempFiles.Add(tempJpg);
-                            }
-                            else
-                            {
-                                finalPaths.Add(file);
-                            }
-                        }
-                        catch (Exception ex)
+                    foreach (var fileList in allFileLists)
+                    {
+                        for (int i = 0; i < fileList.Count; i++)
                         {
-                            // 捕获单个图片预处理错误，不中断循环
-                            errors.Add((Path.GetFileName(file), ex));
-                        }
-                        finally
-                        {
-                            processedCount++;
-                            prepTask.Value = (double)processedCount / totalFiles * 100;
+                            string file = fileList[i];
+                            try
+                            {
+                                string ext = Path.GetExtension(file);
+
+                                if (ext.Equals(".png", StringComparison.OrdinalIgnoreCase) && !settings.Raw)
+                                {
+                                    string tempJpg = _imageService.ConvertPngToTempJpeg(file, jpgQuality);
+                                    tempFiles.Add(tempJpg);
+                                    // 关键：更新树节点中的路径，这样后续生成PDF时用的就是转换后的文件
+                                    fileList[i] = tempJpg;
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                errors.Add((Path.GetFileName(file), ex));
+                                // 如果处理失败，将该文件从列表中移除，避免后续 PDF 生成报错
+                                fileList.RemoveAt(i);
+                                i--;
+                            }
+                            finally
+                            {
+                                processedCount++;
+                                prepTask.Value = (double)processedCount / totalFiles * 100;
+                            }
                         }
                     }
 
                     prepTask.StopTask();
 
-                    // 如果所有文件都处理失败，则无需进行第二步
-                    if (finalPaths.Count == 0)
+                    // 重新计算有效文件数 (因为可能有失败被移除的)
+                    int validFileCount = rootNode.TotalFileCount();
+                    if (validFileCount == 0)
                         return;
 
                     // --- 阶段 2: 生成 PDF ---
@@ -211,9 +226,10 @@ public class MergeCommand(IPdfService pdfService, IImageService imageService) : 
 
                     await Task.Run(() =>
                         _pdfService.MergeImagesToPdf(
-                            finalPaths,
+                            rootNode, // 传入树根节点
                             finalPdfPath,
                             settings.Resize,
+                            totalFilesExpectation: validFileCount, // 传入总数用于计算进度
                             onProgress: (p) => mergeTask.Value = p,
                             onItemError: (fileName, ex) => errors.Add((fileName, ex))
                         ));
@@ -223,7 +239,6 @@ public class MergeCommand(IPdfService pdfService, IImageService imageService) : 
         }
         catch (Exception ex)
         {
-            // 捕获 Progress 上下文之外的致命错误
             AnsiConsole.WriteException(ex, ExceptionFormats.ShortenEverything);
             return 1;
         }
