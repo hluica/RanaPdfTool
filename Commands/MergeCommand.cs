@@ -146,7 +146,8 @@ public class MergeCommand(IPdfService pdfService, IImageService imageService) : 
         }
         catch (Exception ex)
         {
-            AnsiConsole.MarkupLine($"[red]Error scanning files:[/] {ex.Message}");
+            AnsiConsole.MarkupLine($"[red]Error scanning files:[/]");
+            AnsiConsole.WriteException(ex, ExceptionFormats.ShortenEverything);
             return 1;
         }
 

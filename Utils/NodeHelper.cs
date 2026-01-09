@@ -7,6 +7,12 @@ public class NodeHelper
     private static readonly HashSet<string> ValidExtensions
         = new(StringComparer.OrdinalIgnoreCase) { ".jpg", ".jpeg", ".png" };
 
+    /// <summary>
+    /// 获取以传入路径为根的目录树（允许自定义文件排序方式）
+    /// </summary>
+    /// <param name="dirInfo">目录树的根节点</param>
+    /// <param name="comparer">自定义文件排序比较器</param>
+    /// <returns>构建好的目录树</returns>
     public static DirectoryNode BuildDirectoryTree(DirectoryInfo dirInfo, IComparer<string> comparer)
     {
         var node = new DirectoryNode

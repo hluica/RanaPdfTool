@@ -19,7 +19,18 @@ public class PdfService(IImageService imageService) : IPdfService
     // 使用 A4 宽度作为需要固定页面宽度时的目标宽度
     private const float TargetPageWidth = 595f;
 
-    // 工具函数：返回“缩放单个页面内容和边界到指定宽度”所需几何变换参数
+    /// <summary>
+    /// Calculates the transformation parameters required to scale and reposition a rectangle to a specified target
+    /// width, preserving its aspect ratio and normalizing its origin to (0, 0).
+    /// </summary>
+    /// <remarks>The transformation preserves the aspect ratio of the original rectangle. The resulting
+    /// transformation matrix can be used to map coordinates from the original rectangle to the new, normalized
+    /// rectangle.</remarks>
+    /// <param name="originalBox">The original rectangle to be transformed. Represents the source coordinates and dimensions.</param>
+    /// <param name="targetWidth">The desired width, in points, for the transformed rectangle. Must be greater than zero to apply scaling.</param>
+    /// <returns>A tuple containing the new rectangle with normalized origin and target width, followed by the transformation
+    /// matrix parameters: scaleX, skewY, skewX, scaleY, shiftX, and shiftY. If the original rectangle's width is not
+    /// positive, returns the original rectangle and an identity transformation.</returns>
     private static
         (Rectangle newbox,
         double scaleX, double skewY, double skewX,
