@@ -17,7 +17,7 @@ public class PdfService(IImageService imageService) : IPdfService
     private readonly IImageService _imageService = imageService;
 
     // 使用 A4 宽度作为需要固定页面宽度时的目标宽度
-    private const float TargetPageWidth = 595f;
+    private const float TargetPageWidth = 595.25f;
 
     /// <summary>
     /// Calculates the transformation parameters required to scale and reposition a rectangle to a specified target
@@ -37,24 +37,24 @@ public class PdfService(IImageService imageService) : IPdfService
         double scaleY, double shiftX, double shiftY)
         ComputePageTransform(Rectangle originalBox, float targetWidth)
     {
-        float width = originalBox.GetWidth();
-        float height = originalBox.GetHeight();
-        float llx = originalBox.GetX();
-        float lly = originalBox.GetY();
+        double width = originalBox.GetWidth();
+        double height = originalBox.GetHeight();
+        double llx = originalBox.GetX();
+        double lly = originalBox.GetY();
 
         if (width <= 0)
             return (originalBox, 1, 0, 0, 1, 0, 0);
 
         // 1. 计算缩放
-        float scale = targetWidth / width;
-        float targetHeight = height * scale;
+        double scale = targetWidth / width;
+        double targetHeight = height * scale;
 
         // 2. 生成新边界 (归一化到 0,0)
-        var newBox = new Rectangle(0, 0, targetWidth, targetHeight);
+        var newBox = new Rectangle(0, 0, targetWidth, (float)targetHeight);
 
         // 3. 计算位移 (将原始起点的偏移量反向抵消，并应用缩放)
-        float shiftX = -llx * scale;
-        float shiftY = -lly * scale;
+        double shiftX = -llx * scale;
+        double shiftY = -lly * scale;
 
         // 返回计算结果
         return (newBox, scale, 0, 0, scale, shiftX, shiftY);
