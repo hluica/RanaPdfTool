@@ -17,7 +17,7 @@ public class PdfService(IImageService imageService) : IPdfService
     private readonly IImageService _imageService = imageService;
 
     // 使用 A4 宽度作为需要固定页面宽度时的目标宽度
-    private const float TargetPageWidth = 595.25f;
+    private const float TargetPageWidth = 595.276f;
 
     /// <summary>
     /// Calculates the transformation parameters required to scale and reposition a rectangle to a specified target
