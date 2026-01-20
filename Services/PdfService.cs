@@ -17,7 +17,7 @@ public class PdfService(IImageService imageService) : IPdfService
     private readonly IImageService _imageService = imageService;
 
     // 使用 A4 宽度作为需要固定页面宽度时的目标宽度
-    private const float TargetPageWidth = 595.276f;
+    private const float TARGET_PAGE_WIDTH = 595.276f;
 
     /// <summary>
     /// Calculates the transformation parameters required to scale and reposition a rectangle to a specified target
@@ -117,14 +117,14 @@ public class PdfService(IImageService imageService) : IPdfService
 
                     if (doResize)
                     {
-                        var (newBox, a, b, c, d, e, f) = ComputePageTransform(originalSize, TargetPageWidth);
-                        page.SetMediaBox(newBox);
-                        page.SetCropBox(newBox);
-                        new PdfCanvas(page).ConcatMatrix(a, b, c, d, e, f);
+                        var (newBox, a, b, c, d, e, f) = ComputePageTransform(originalSize, TARGET_PAGE_WIDTH);
+                        _ = page.SetMediaBox(newBox);
+                        _ = page.SetCropBox(newBox);
+                        _ = new PdfCanvas(page).ConcatMatrix(a, b, c, d, e, f);
                     }
 
                     var canvas = new PdfCanvas(page);
-                    canvas.AddXObjectFittedIntoRectangle(image.GetXObject(), new Rectangle(0, 0, imgWidth, imgHeight));
+                    _ = canvas.AddXObjectFittedIntoRectangle(image.GetXObject(), new Rectangle(0, 0, imgWidth, imgHeight));
                 }
                 catch (Exception ex)
                 {
@@ -175,11 +175,11 @@ public class PdfService(IImageService imageService) : IPdfService
             {
                 var page = pdfDoc.GetPage(i);
 
-                var (newBox, a, b, c, d, e, f) = ComputePageTransform(page.GetMediaBox(), TargetPageWidth);
+                var (newBox, a, b, c, d, e, f) = ComputePageTransform(page.GetMediaBox(), TARGET_PAGE_WIDTH);
 
-                page.SetMediaBox(newBox);
-                page.SetCropBox(newBox);
-                new PdfCanvas(page.NewContentStreamBefore(), page.GetResources(), pdfDoc)
+                _ = page.SetMediaBox(newBox);
+                _ = page.SetCropBox(newBox);
+                _ = new PdfCanvas(page.NewContentStreamBefore(), page.GetResources(), pdfDoc)
                     .ConcatMatrix(a, b, c, d, e, f);
             }
             catch (Exception ex)
@@ -252,7 +252,7 @@ public class PdfService(IImageService imageService) : IPdfService
                                 {
                                     // 2. iText 返回 null (通常是 FlateDecode)。
                                     // 这时我们不知道它是“原生像素流”还是“嵌入的完整图片文件(如PNG)”，交给 ImageService 进行字节嗅探。
-                                    _imageService.SaveWithDetectedFormat(imageBytes, baseOutputPath);
+                                    _ = _imageService.SaveWithDetectedFormat(imageBytes, baseOutputPath);
                                 }
                             }
                             else
