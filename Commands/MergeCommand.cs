@@ -66,7 +66,7 @@ public class MergeCommand(IPdfService pdfService, IImageService imageService) : 
             {
                 try
                 {
-                    Directory.CreateDirectory(parentDir);
+                    _ = Directory.CreateDirectory(parentDir);
                 }
                 catch (Exception ex)
                 {

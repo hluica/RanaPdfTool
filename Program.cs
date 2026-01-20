@@ -18,8 +18,9 @@ public static class Program
         var services = new ServiceCollection();
 
         // 注册依赖
-        services.AddSingleton<IImageService, ImageService>();
-        services.AddSingleton<IPdfService, PdfService>();
+        _ = services
+            .AddSingleton<IImageService, ImageService>()
+            .AddSingleton<IPdfService, PdfService>();
 
         // 创建注册器
         var registrar = new TypeRegistrar(services);
@@ -29,16 +30,16 @@ public static class Program
 
         app.Configure(config =>
         {
-            config.SetApplicationName("RanaPdfTool");
-            config.SetApplicationVersion(GetAppVersion());
+            _ = config.SetApplicationName("RanaPdfTool")
+                .SetApplicationVersion(GetAppVersion());
 
-            config.AddCommand<MergeCommand>("merge")
+            _ = config.AddCommand<MergeCommand>("merge")
                 .WithDescription("Merges images from a folder into a single PDF.");
 
-            config.AddCommand<ModifyCommand>("modify")
+            _ = config.AddCommand<ModifyCommand>("modify")
                 .WithDescription("Resizes PDF pages to a fixed width (A4 width) while maintaining aspect ratio & image quality.");
 
-            config.AddCommand<SplitCommand>("split")
+            _ = config.AddCommand<SplitCommand>("split")
                 .WithDescription("Extracts images from a PDF file.");
         });
 

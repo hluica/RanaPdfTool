@@ -38,7 +38,7 @@ public class SplitCommand(IPdfService pdfService) : AsyncCommand<SplitSettings>
             finalOutputDir = Path.Combine(baseOutputDir, subFolderName);
         }
 
-        Directory.CreateDirectory(finalOutputDir);
+        _ = Directory.CreateDirectory(finalOutputDir);
 
         var errors = new ConcurrentBag<(string context, Exception exception)>();
         bool hasCriticalFailure = false;
