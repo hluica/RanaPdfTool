@@ -133,6 +133,7 @@ public class MergeCommand(IPdfService pdfService, IImageService imageService) : 
             return 1;
 
         finalPdfPath = uniquePath;
+        string finalPdfLink = MarkupHelper.FileLinkMarkup(finalPdfPath);
 
         // 配置自然排序比较器
         var naturalComparer = StringComparer.OrdinalIgnoreCase.WithNaturalSort();
@@ -173,7 +174,7 @@ public class MergeCommand(IPdfService pdfService, IImageService imageService) : 
                     new ProgressBarColumn(),
                     new PercentageColumn(),
                     new SpinnerColumn(),
-                    new RemainingTimeColumn(),
+                    new ElapsedTimeColumn(),
                 ])
                 .StartAsync(async ctx =>
                 {
@@ -324,14 +325,14 @@ public class MergeCommand(IPdfService pdfService, IImageService imageService) : 
         // --- 结果汇总 ---
         if (errors.IsEmpty)
         {
-            AnsiConsole.MarkupLine($"[green]Successfully created:[/] [underline]{Markup.Escape(finalPdfPath)}[/]");
+            AnsiConsole.MarkupLine($"[green]Successfully created:[/] {finalPdfLink}");
             return 0;
         }
         else
         {
             // 如果生成了部分文件，提示位置
             if (File.Exists(finalPdfPath))
-                AnsiConsole.MarkupLine($"[yellow]PDF created with warnings at:[/] [underline]{Markup.Escape(finalPdfPath)}[/]");
+                AnsiConsole.MarkupLine($"[yellow]PDF created with warnings at:[/] {finalPdfLink}");
 
             AnsiConsole.MarkupLine($"[yellow]Completed with {errors.Count} errors[/].");
             if (hasCriticalFailure)

@@ -9,11 +9,11 @@ using Spectre.Console.Cli;
 
 namespace RanaPdfTool.Commands;
 
-public class SplitCommand(IPdfService pdfService) : AsyncCommand<SplitSettings>
+public class ExtractCommand(IPdfService pdfService) : AsyncCommand<ExtractSettings>
 {
     private readonly IPdfService _pdfService = pdfService;
 
-    public override async Task<int> ExecuteAsync(CommandContext context, SplitSettings settings, CancellationToken cancellationToken)
+    public override async Task<int> ExecuteAsync(CommandContext context, ExtractSettings settings, CancellationToken cancellationToken)
     {
         int jpgQuality = settings.Quality ?? 90;
 
@@ -39,20 +39,22 @@ public class SplitCommand(IPdfService pdfService) : AsyncCommand<SplitSettings>
         }
 
         _ = Directory.CreateDirectory(finalOutputDir);
+        string finalOutputLink = MarkupHelper.FileLinkMarkup(finalOutputDir);
 
         var errors = new ConcurrentBag<(string context, Exception exception)>();
         bool hasCriticalFailure = false;
 
         try
         {
-            await AnsiConsole.Progress()
+            await AnsiConsole
+                .Progress()
                 .AutoClear(false)
                 .Columns([
                     new TaskDescriptionColumn(),
                     new ProgressBarColumn(),
                     new PercentageColumn(),
                     new SpinnerColumn(),
-                    new RemainingTimeColumn(),
+                    new ElapsedTimeColumn(),
                 ])
                 .StartAsync(async ctx =>
                 {
@@ -77,7 +79,7 @@ public class SplitCommand(IPdfService pdfService) : AsyncCommand<SplitSettings>
 
         if (errors.IsEmpty)
         {
-            AnsiConsole.MarkupLine($"[green]Images extracted to:[/] [underline]{Markup.Escape(finalOutputDir)}[/]");
+            AnsiConsole.MarkupLine($"[green]Images extracted to:[/] {finalOutputLink}");
             return 0;
         }
         else

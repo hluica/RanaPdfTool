@@ -5,7 +5,7 @@ using Spectre.Console.Cli;
 
 namespace RanaPdfTool.Settings;
 
-public class SplitSettings : CommandSettings
+public class ExtractSettings : CommandSettings
 {
     [CommandOption("-f|--file <FILE>")]
     [Description("Path to the source PDF file.")]

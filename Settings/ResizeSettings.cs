@@ -4,7 +4,7 @@ using Spectre.Console.Cli;
 
 namespace RanaPdfTool.Settings;
 
-public class ModifySettings : CommandSettings
+public class ResizeSettings : CommandSettings
 {
     [CommandOption("-f|--file <FILE>")]
     [Description("Path to the PDF file to modify.")]

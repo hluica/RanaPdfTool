@@ -36,10 +36,10 @@ public static class Program
             _ = config.AddCommand<MergeCommand>("merge")
                 .WithDescription("Merges images from a folder into a single PDF.");
 
-            _ = config.AddCommand<ModifyCommand>("modify")
+            _ = config.AddCommand<ResizeCommand>("resize")
                 .WithDescription("Resizes PDF pages to a fixed width (A4 width) while maintaining aspect ratio & image quality.");
 
-            _ = config.AddCommand<SplitCommand>("split")
+            _ = config.AddCommand<ExtractCommand>("extract")
                 .WithDescription("Extracts images from a PDF file.");
         });
 

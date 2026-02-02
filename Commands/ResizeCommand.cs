@@ -9,11 +9,11 @@ using Spectre.Console.Cli;
 
 namespace RanaPdfTool.Commands;
 
-public class ModifyCommand(IPdfService pdfService) : AsyncCommand<ModifySettings>
+public class ResizeCommand(IPdfService pdfService) : AsyncCommand<ResizeSettings>
 {
     private readonly IPdfService _pdfService = pdfService;
 
-    public override async Task<int> ExecuteAsync(CommandContext context, ModifySettings settings, CancellationToken cancellationToken)
+    public override async Task<int> ExecuteAsync(CommandContext context, ResizeSettings settings, CancellationToken cancellationToken)
     {
         string inputFile = PathHelper.ResolveAbsolutePath(settings.FilePath);
 
@@ -26,20 +26,22 @@ public class ModifyCommand(IPdfService pdfService) : AsyncCommand<ModifySettings
         string dir = Path.GetDirectoryName(inputFile)!;
         string name = Path.GetFileNameWithoutExtension(inputFile);
         string outputFile = Path.Combine(dir, $"{name}_modified.pdf");
+        string outputLink = MarkupHelper.FileLinkMarkup(outputFile);
 
         var errors = new ConcurrentBag<(string context, Exception exception)>();
         bool hasCriticalFailure = false;
 
         try
         {
-            await AnsiConsole.Progress()
+            await AnsiConsole
+                .Progress()
                 .AutoClear(false)
                 .Columns([
                     new TaskDescriptionColumn(),
                     new ProgressBarColumn(),
                     new PercentageColumn(),
                     new SpinnerColumn(),
-                    new RemainingTimeColumn(),
+                    new ElapsedTimeColumn(),
                 ])
                 .StartAsync(async ctx =>
                 {
@@ -62,7 +64,7 @@ public class ModifyCommand(IPdfService pdfService) : AsyncCommand<ModifySettings
 
         if (errors.IsEmpty)
         {
-            AnsiConsole.MarkupLine($"[green]Modified file saved to:[/] [underline]{Markup.Escape(outputFile)}[/]");
+            AnsiConsole.MarkupLine($"[green]Modified file saved to:[/] {outputLink}");
             return 0;
         }
         else
