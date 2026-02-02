@@ -165,7 +165,8 @@ public class MergeCommand(IPdfService pdfService, IImageService imageService) : 
 
         try
         {
-            await AnsiConsole.Progress()
+            await AnsiConsole
+                .Progress()
                 .AutoClear(false)
                 .Columns([
                     new TaskDescriptionColumn(),
@@ -177,44 +178,104 @@ public class MergeCommand(IPdfService pdfService, IImageService imageService) : 
                 .StartAsync(async ctx =>
                 {
                     // --- 阶段 1: 预处理图片 ---
-                    // 我们需要遍历树结构，并在必要时更新树中的文件路径 (PNG -> JPG)
                     var prepTask = ctx.AddTask("[green]Processing images...[/]", maxValue: 100);
+
+                    // 1. 准备打平的任务列表 (串行)
+                    var allFileLists = NodeHelper
+                        .GetAllFileLists(rootNode)
+                        .ToList();
+                    var workItems = allFileLists
+                        .SelectMany(list => list.Select(
+                            (file, index) => new
+                            {
+                                List = list,
+                                Index = index,
+                                FilePath = file
+                            }))
+                        .ToList();
+
+                    int totalFiles = workItems.Count;
                     int processedCount = 0;
 
-                    // 获取树中所有的文件列表引用，以便进行修改
-                    var allFileLists = NodeHelper.GetAllFileLists(rootNode).ToList();
+                    // 用于存储并行结果的容器 (线程安全)
+                    var processingResults = new ConcurrentBag<ImageProcessingResult>();
 
-                    foreach (var fileList in allFileLists)
+                    // 2. 并行处理阶段
+                    await Task.Run(() =>
                     {
-                        for (int i = 0; i < fileList.Count; i++)
+                        var parallelOptions = new ParallelOptions
                         {
-                            string file = fileList[i];
+                            MaxDegreeOfParallelism = Environment.ProcessorCount
+                        };
+
+                        _ = Parallel.ForEach(workItems, parallelOptions, item =>
+                        {
+                            string? finalPath = null;
+                            Exception? capturedException = null;
+                            bool isSuccess = false;
+
                             try
                             {
-                                string ext = Path.GetExtension(file);
+                                // 1. 核心业务逻辑：仅做数据处理，不操作外部集合
+                                string ext = Path.GetExtension(item.FilePath);
 
-                                if (ext.Equals(".png", StringComparison.OrdinalIgnoreCase) && !settings.Raw)
-                                {
-                                    string tempJpg = _imageService.ConvertPngToTempJpeg(file, jpgQuality);
-                                    tempFiles.Add(tempJpg);
-                                    // 关键：更新树节点中的路径，这样后续生成PDF时用的就是转换后的文件
-                                    fileList[i] = tempJpg;
-                                }
+                                finalPath = ext.Equals(".png", StringComparison.OrdinalIgnoreCase) && !settings.Raw
+                                    ? _imageService.ConvertPngToTempJpeg(item.FilePath, jpgQuality)
+                                    : item.FilePath;
+
+                                isSuccess = true;
                             }
                             catch (Exception ex)
                             {
-                                errors.Add((Path.GetFileName(file), ex));
-                                // 如果处理失败，将该文件从列表中移除，避免后续 PDF 生成报错
-                                fileList.RemoveAt(i);
-                                i--;
+                                // 2. 异常捕获：仅记录状态
+                                capturedException = ex;
+                                isSuccess = false;
+                                finalPath = null;
                             }
                             finally
                             {
-                                processedCount++;
-                                prepTask.Value = (double)processedCount / totalFiles * 100;
+                                // 3. 单点提交区 (Single Point of Submission)
+                                processingResults.Add(
+                                    new ImageProcessingResult(
+                                        item.List,
+                                        item.Index,
+                                        item.FilePath,
+                                        finalPath,
+                                        isSuccess,
+                                        capturedException
+                                    ));
+
+                                // 4. 进度更新
+                                int current = Interlocked.Increment(ref processedCount);
+                                prepTask.Value = (double)current / totalFiles * 100;
+                            }
+                        });
+                    });
+
+                    // 3. 串行更新阶段 (更新外部数据结构)
+                    // 在这个阶段，我们处理所有收集到的结果，并更新 rootNode 的引用
+                    foreach (var result in processingResults)
+                    {
+                        if (result.IsSuccess)
+                        {
+                            // 如果路径发生了变化（PNG -> JPG），则更新列表并记录临时文件
+                            if (result.NewPath != result.OriginalPath)
+                            {
+                                result.ParentList[result.Index] = result.NewPath!;
+                                tempFiles.Add(result.NewPath!);
                             }
                         }
+                        else
+                        {
+                            // 处理失败：记录错误，并将该位置标记为待删除
+                            errors.Add((Path.GetFileName(result.OriginalPath), result.Exception!));
+                            result.ParentList[result.Index] = null!; // 暂时占位
+                        }
                     }
+
+                    // 统一清理处理失败的项
+                    foreach (var fileList in allFileLists)
+                        _ = fileList.RemoveAll(f => f == null);
 
                     prepTask.StopTask();
 
