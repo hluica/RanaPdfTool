@@ -179,7 +179,7 @@ public class MergeCommand(IPdfService pdfService, IImageService imageService) : 
                 .StartAsync(async ctx =>
                 {
                     // --- 阶段 1: 预处理图片 ---
-                    var prepTask = ctx.AddTask("[green]Processing images...[/]", maxValue: 100);
+                    var prepTask = ctx.AddTask("[green]Processing images...[/]");
 
                     // 1. 准备打平的任务列表 (串行)
                     var allFileLists = NodeHelper
@@ -196,7 +196,7 @@ public class MergeCommand(IPdfService pdfService, IImageService imageService) : 
                         .ToList();
 
                     int totalFiles = workItems.Count;
-                    int processedCount = 0;
+                    prepTask.MaxValue = totalFiles;
 
                     // 用于存储并行结果的容器 (线程安全)
                     var processingResults = new ConcurrentBag<ImageProcessingResult>();
@@ -247,8 +247,7 @@ public class MergeCommand(IPdfService pdfService, IImageService imageService) : 
                                     ));
 
                                 // 4. 进度更新
-                                int current = Interlocked.Increment(ref processedCount);
-                                prepTask.Value = (double)current / totalFiles * 100;
+                                prepTask.Increment(1);
                             }
                         });
                     });
@@ -278,15 +277,16 @@ public class MergeCommand(IPdfService pdfService, IImageService imageService) : 
                     foreach (var fileList in allFileLists)
                         _ = fileList.RemoveAll(f => f == null);
 
+                    prepTask.Value = prepTask.MaxValue;
                     prepTask.StopTask();
+
+                    // --- 阶段 2: 生成 PDF ---
+                    var mergeTask = ctx.AddTask("[green]Generating PDF...[/]", maxValue: 100);
 
                     // 重新计算有效文件数 (因为可能有失败被移除的)
                     int validFileCount = rootNode.TotalFileCount();
                     if (validFileCount == 0)
                         return;
-
-                    // --- 阶段 2: 生成 PDF ---
-                    var mergeTask = ctx.AddTask("[green]Generating PDF...[/]", maxValue: 100);
 
                     await Task.Run(() =>
                         _pdfService.MergeImagesToPdf(
@@ -298,6 +298,7 @@ public class MergeCommand(IPdfService pdfService, IImageService imageService) : 
                             onItemError: (fileName, ex) => errors.Add((fileName, ex))
                         ));
 
+                    mergeTask.Value = 100;
                     mergeTask.StopTask();
                 });
         }
