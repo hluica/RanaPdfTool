@@ -280,25 +280,27 @@ public class MergeCommand(IPdfService pdfService, IImageService imageService) : 
                     prepTask.Value = prepTask.MaxValue;
                     prepTask.StopTask();
 
-                    // --- 阶段 2: 生成 PDF ---
-                    var mergeTask = ctx.AddTask("[green]Generating PDF...[/]", maxValue: 100);
-
                     // 重新计算有效文件数 (因为可能有失败被移除的)
                     int validFileCount = rootNode.TotalFileCount();
                     if (validFileCount == 0)
+                    {
+                        AnsiConsole.MarkupLine($"[yellow]No valid files found for PDF generation.[/]");
                         return;
+                    }
+
+                    // --- 阶段 2: 生成 PDF ---
+                    var mergeTask = ctx.AddTask("[green]Generating PDF...[/]", maxValue: validFileCount);
 
                     await Task.Run(() =>
                         _pdfService.MergeImagesToPdf(
                             rootNode, // 传入树根节点
                             finalPdfPath,
                             settings.Resize,
-                            totalFilesExpectation: validFileCount, // 传入总数用于计算进度
-                            onProgress: (p) => mergeTask.Value = p,
+                            onProgress: () => mergeTask.Increment(1),
                             onItemError: (fileName, ex) => errors.Add((fileName, ex))
                         ));
 
-                    mergeTask.Value = 100;
+                    mergeTask.Value = mergeTask.MaxValue;
                     mergeTask.StopTask();
                 });
         }

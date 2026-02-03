@@ -10,15 +10,13 @@ public interface IPdfService
     /// <param name="rootNode">用于从中读取文件的目录树</param>
     /// <param name="outputPdfPath">输出 PDF 文件的路径</param>
     /// <param name="doResize">决定是否调整图片大小</param>
-    /// <param name="totalFilesExpectation">预计处理的文件总数</param>
     /// <param name="onProgress">进度回调</param>
     /// <param name="onItemError">文件错误回调</param>
     void MergeImagesToPdf(
         DirectoryNode rootNode,
         string outputPdfPath,
         bool doResize,
-        int totalFilesExpectation,
-        Action<double>? onProgress = null,
+        Action? onProgress = null,
         Action<string, Exception>? onItemError = null);
 
     /// <summary>

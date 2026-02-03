@@ -64,8 +64,7 @@ public class PdfService(IImageService imageService) : IPdfService
         DirectoryNode rootNode,
         string outputPdfPath,
         bool doResize,
-        int totalFilesExpectation,
-        Action<double>? onProgress = null,
+        Action? onProgress = null,
         Action<string, Exception>? onItemError = null)
     {
         using var writer = new PdfWriter(outputPdfPath);
@@ -77,9 +76,6 @@ public class PdfService(IImageService imageService) : IPdfService
 
         // 获取 PDF 的根书签对象
         var rootOutline = pdfDoc.GetOutlines(false);
-
-        // 用于在递归中追踪进度
-        int processedCount = 0;
 
         // 开始递归处理
         _ = ProcessNode(rootNode, pdfDoc, rootOutline, isRoot: true);
@@ -132,9 +128,7 @@ public class PdfService(IImageService imageService) : IPdfService
                 }
                 finally
                 {
-                    processedCount++;
-                    if (totalFilesExpectation > 0)
-                        onProgress?.Invoke((double)processedCount / totalFilesExpectation * 100);
+                    onProgress?.Invoke();
                 }
             }
 
