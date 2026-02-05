@@ -13,7 +13,7 @@ namespace RanaPdfTool;
 
 public static class Program
 {
-    public static int Main(string[] args)
+    public static async Task<int> Main(string[] args)
     {
         var services = new ServiceCollection();
 
@@ -43,7 +43,7 @@ public static class Program
                 .WithDescription("Extracts images from a PDF file.");
         });
 
-        return app.Run(args);
+        return await app.RunAsync(args);
     }
 
     private static string GetAppVersion()
