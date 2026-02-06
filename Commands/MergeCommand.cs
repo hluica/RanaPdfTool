@@ -18,12 +18,12 @@ public class MergeCommand(IPdfService pdfService, IImageService imageService) : 
     private readonly IImageService _imageService = imageService;
 
     // 用于并行图像处理阶段的任务描述结构
-    private readonly record struct ImageJob(
+    private sealed record ImageJob(
         IList<string> ParentList,
         int Index,
         string FilePath);
     // 用于并行图像处理阶段的结果传递结构，包含必要的信息以便后续更新树结构和错误记录
-    private readonly record struct ImageResult(
+    private sealed record ImageResult(
         IList<string> ParentList,
         int Index,
         string OriginalPath,
