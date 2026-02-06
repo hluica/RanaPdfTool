@@ -1,5 +1,4 @@
-﻿using System.Collections.Concurrent;
-using System.Threading.Channels;
+﻿using System.Threading.Channels;
 
 using NaturalSort.Extension;
 
@@ -176,7 +175,7 @@ public class MergeCommand(IPdfService pdfService, IImageService imageService) : 
         }
 
         var tempFiles = new List<string>();
-        var errors = new ConcurrentBag<(string context, Exception exception)>();
+        var errors = new List<(string context, Exception exception)>();
         bool hasCriticalFailure = false;
 
         try
@@ -373,7 +372,7 @@ public class MergeCommand(IPdfService pdfService, IImageService imageService) : 
         }
 
         // --- 结果汇总 ---
-        if (errors.IsEmpty)
+        if (errors.Count == 0)
         {
             AnsiConsole.MarkupLine($"[green]Successfully created:[/] {finalPdfLink}");
             return 0;
