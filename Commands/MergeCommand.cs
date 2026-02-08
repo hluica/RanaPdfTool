@@ -17,17 +17,36 @@ public class MergeCommand(IPdfService pdfService, IImageService imageService) : 
     private readonly IPdfService _pdfService = pdfService;
     private readonly IImageService _imageService = imageService;
 
-    // 用于并行图像处理阶段的任务描述结构
-    private sealed record ImageJob(
+    private static readonly int _cpuCount = Math.Max(1, Environment.ProcessorCount - 1); // 保留一个核心给系统和UI
+    private static readonly int _boundedCapacity = Math.Min(_cpuCount * 2, 48); // 并行通道的容量，防止OOM
+
+    // --- DTO定义 ---
+    // 1. 待加载任务：包含文件位置信息
+    private sealed record LoadJob(
         IList<string> ParentList,
         int Index,
         string FilePath);
-    // 用于并行图像处理阶段的结果传递结构，包含必要的信息以便后续更新树结构和错误记录
-    private sealed record ImageResult(
+
+    // 2. 待处理任务：包含已加载到内存的数据流
+    private sealed record ProcessJob(
+        IList<string> ParentList,
+        int Index,
+        string FilePath,
+        MemoryStream InputStream);
+
+    // 3. 待保存任务：包含处理后的数据流
+    private sealed record SaveJob(
         IList<string> ParentList,
         int Index,
         string OriginalPath,
-        string? NewPath,
+        MemoryStream OutputStream);
+
+    // 4. 处理结果：用于 UI 更新和列表回写
+    private sealed record WorkResult(
+        IList<string> ParentList,
+        int Index,
+        string OriginalPath,
+        string? NewPath, // 如果发生了转换，这里是新路径；否则和 OriginalPath 相同
         bool Success,
         Exception? Exception);
 
@@ -195,45 +214,60 @@ public class MergeCommand(IPdfService pdfService, IImageService imageService) : 
                     // --- 阶段 1: 预处理图片 ---
                     var prepTask = ctx.AddTask("[green]Processing images...[/]");
 
-                    // 1. 准备数据源
+                    // --- 1. 准备数据源 ---
                     var allFileLists = NodeHelper
                         .GetAllFileLists(rootNode)
                         .ToList();
-                    var workItems = allFileLists
+                    // 扁平化所有文件项，方便分发
+                    var rawItems = allFileLists
                         .SelectMany(list => list.Select(
-                            (file, index) => new ImageJob(list, index, file)))
-                        .ToList();
+                            (file, index) => new LoadJob(list, index, file)))
+                    .ToList();
 
-                    prepTask.MaxValue = workItems.Count;
+                    prepTask.MaxValue = rawItems.Count;
 
-                    // 2. 配置并行通道 (Channels)
-                    // jobChannel: 限制容量，防止生产速度远超消费速度导致内存暴涨
-                    var jobChannel = Channel.CreateBounded<ImageJob>(new BoundedChannelOptions(500)
-                    {
-                        SingleWriter = true, // 只有一个生产者循环
-                        SingleReader = false // 多个 Worker 抢占读取
-                    });
+                    // --- 2. 配置流水线通道 ---
+                    // [Channel 1] LoadChannel: 待读取的文件路径
+                    var loadChannel = Channel.CreateBounded<LoadJob>(
+                        new BoundedChannelOptions(1000)
+                        {
+                            SingleWriter = true,
+                            SingleReader = true
+                        });
 
-                    // resultChannel: 无界，因为处理结果的处理速度（UI更新/列表赋值）通常很快
-                    var resultChannel = Channel.CreateUnbounded<ImageResult>(new UnboundedChannelOptions
-                    {
-                        SingleWriter = false, // 多个 Worker 和生产者都会写入
-                        SingleReader = true   // 只有一个协调者在读取
-                    });
+                    // [Channel 2] ProcessChannel: 待处理的内存流
+                    var processChannel = Channel.CreateBounded<ProcessJob>(
+                        new BoundedChannelOptions(_boundedCapacity)
+                        {
+                            SingleWriter = true,
+                            SingleReader = false
+                        });
 
-                    // 3. 计算 Worker 数量 (保留 1 个核心给 IO/UI/系统)
-                    int workerCount = Math.Max(1, Environment.ProcessorCount - 1);
+                    // [Channel 3] SaveChannel: 待写入的内存流
+                    var saveChannel = Channel.CreateBounded<SaveJob>(
+                        new BoundedChannelOptions(_boundedCapacity)
+                        {
+                            SingleWriter = false,
+                            SingleReader = true
+                        });
 
-                    // 4-A. 启动协调者 (Coordinator) - 负责 UI 更新和结果汇总
+                    // [Channel 4] ResultChannel: 结果汇总
+                    var resultChannel = Channel.CreateUnbounded<WorkResult>(
+                        new UnboundedChannelOptions
+                        {
+                            SingleWriter = false,
+                            SingleReader = true
+                        });
+
+                    // --- 3. 启动流水线各阶段 ---
+                    // A. Coordinator: UI 刷新、列表更新、错误收集
                     var coordinatorTask = Task.Run(async () =>
                     {
-                        // 持续读取直到结果通道关闭
                         await foreach (var result in resultChannel.Reader.ReadAllAsync())
                         {
                             if (result.Success)
                             {
-                                // 只有路径发生变化时（PNG转JPG）才更新引用和记录
-                                // 注意：这里是单线程环境，直接操作 List 是安全的，无需锁
+                                // 只有路径变了才更新 (PNG -> JPG)
                                 if (result.NewPath != result.OriginalPath)
                                 {
                                     result.ParentList[result.Index] = result.NewPath!;
@@ -242,83 +276,190 @@ public class MergeCommand(IPdfService pdfService, IImageService imageService) : 
                             }
                             else
                             {
-                                // 记录错误并将位置标记为 null (稍后清理)
                                 errors.Add((Path.GetFileName(result.OriginalPath), result.Exception!));
-                                result.ParentList[result.Index] = null!;
+                                result.ParentList[result.Index] = null!; // 标记为无效
                             }
-
-                            // 统一更新 UI 进度
                             prepTask.Increment(1);
                         }
                     });
 
-                    // 4-B. 启动消费者 (Consumers) - 负责 CPU 密集型转换
-                    var consumerTasks = new Task[workerCount];
-                    for (int i = 0; i < workerCount; i++)
+                    // B. Saver: 从内存流写入磁盘，释放内存流
+                    var saverTask = Task.Run(async () =>
                     {
-                        consumerTasks[i] = Task.Run(async () =>
+                        await foreach (var job in saveChannel.Reader.ReadAllAsync())
                         {
-                            // 持续读取任务直到任务通道关闭
-                            await foreach (var job in jobChannel.Reader.ReadAllAsync())
+                            try
                             {
+                                // 生成临时文件路径
+                                string tempPath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString() + ".jpg");
+
+                                // IO 操作：写入磁盘
+                                job.OutputStream.Position = 0;
+                                using (var fs = new FileStream(
+                                    tempPath,
+                                    FileMode.Create,
+                                    FileAccess.Write,
+                                    FileShare.None,
+                                    4096,
+                                    useAsync: true))
+                                {
+                                    await job.OutputStream.CopyToAsync(fs);
+                                }
+
+                                // 发送成功结果
+                                await resultChannel.Writer.WriteAsync(
+                                new WorkResult(
+                                    job.ParentList,
+                                    job.Index,
+                                    job.OriginalPath,
+                                    tempPath,
+                                    true,
+                                    null));
+                            }
+                            catch (Exception ex)
+                            {
+                                await resultChannel.Writer.WriteAsync(
+                                new WorkResult(
+                                    job.ParentList,
+                                    job.Index,
+                                    job.OriginalPath,
+                                    null,
+                                    false,
+                                    ex));
+                            }
+                            finally
+                            {
+                                // 释放 Process 阶段产生的内存流
+                                await job.OutputStream.DisposeAsync();
+                            }
+                        }
+                    });
+
+                    // C. Processor: 解码图片，编码为 JPEG，不涉及磁盘 IO
+                    var processorTasks = new Task[_cpuCount];
+                    for (int i = 0; i < _cpuCount; i++)
+                    {
+                        processorTasks[i] = Task.Run(async () =>
+                        {
+                            await foreach (var job in processChannel.Reader.ReadAllAsync(cancellationToken))
+                            {
+                                // 准备输出流
+                                var outStream = new MemoryStream();
                                 try
                                 {
-                                    // 执行耗时的转换逻辑
-                                    string newPath = _imageService.ConvertPngToTempJpeg(job.FilePath, jpgQuality);
+                                    // CPU 操作
+                                    _imageService.ConvertPngToTempJpegStream(
+                                        job.InputStream,
+                                        outStream,
+                                        jpgQuality);
 
-                                    // 发送成功结果
-                                    await resultChannel.Writer.WriteAsync(
-                                        new ImageResult(job.ParentList, job.Index, job.FilePath, newPath, true, null));
+                                    // 发送给 Saver
+                                    await saveChannel.Writer.WriteAsync(
+                                        new SaveJob(
+                                            job.ParentList,
+                                            job.Index,
+                                            job.FilePath,
+                                            outStream));
                                 }
                                 catch (Exception ex)
                                 {
-                                    // 发送失败结果
+                                    // 如果处理失败，直接发给结果通道，跳过 Saver
+                                    await outStream.DisposeAsync(); // 清理没用上的输出流
                                     await resultChannel.Writer.WriteAsync(
-                                        new ImageResult(job.ParentList, job.Index, job.FilePath, null, false, ex));
+                                        new WorkResult(
+                                            job.ParentList,
+                                            job.Index,
+                                            job.FilePath,
+                                            null,
+                                            false,
+                                            ex));
+                                }
+                                finally
+                                {
+                                    // 关键：释放 Load 阶段产生的输入流
+                                    await job.InputStream.DisposeAsync();
                                 }
                             }
                         });
                     }
 
-                    // 4-C. 生产者 (Producer) - 主流程负责分发
-                    foreach (var item in workItems)
+                    // D. Loader: 读取磁盘文件到内存流
+                    var loaderTask = Task.Run(async () =>
+                    {
+                        await foreach (var job in loadChannel.Reader.ReadAllAsync(cancellationToken))
+                        {
+                            try
+                            {
+                                // IO 操作
+                                // 使用 MemoryStream 接管文件内容
+                                byte[] bytes = await File.ReadAllBytesAsync(job.FilePath);
+                                var memoryStream = new MemoryStream(bytes);
+
+                                // 发送给 Processor
+                                await processChannel.Writer.WriteAsync(
+                                new ProcessJob(
+                                    job.ParentList,
+                                    job.Index,
+                                    job.FilePath,
+                                    memoryStream));
+                            }
+                            catch (Exception ex)
+                            {
+                                // 如果加载失败，跳过中间步骤，直接报告错误
+                                await resultChannel.Writer.WriteAsync(
+                                new WorkResult(
+                                    job.ParentList,
+                                    job.Index,
+                                    job.FilePath,
+                                    null,
+                                    false,
+                                    ex));
+                            }
+                        }
+                    });
+
+                    // --- 4. 生产者分发 (Main Loop) ---
+                    foreach (var item in rawItems)
                     {
                         string ext = Path.GetExtension(item.FilePath);
-
-                        // 判断逻辑：是否应当执行转换方法？
-                        // 条件：是 PNG 且没有开启 Raw 模式
                         bool needsConversion = ext.Equals(".png", StringComparison.OrdinalIgnoreCase) && !settings.Raw;
 
                         if (needsConversion)
                         {
-                            // 需要 CPU 处理：写入任务通道，等待 Worker 处理
-                            // 如果通道已满，这里会异步等待，形成自然背压
-                            await jobChannel.Writer.WriteAsync(item);
+                            // 需要处理的任务 -> 进入 LoadChannel
+                            await loadChannel.Writer.WriteAsync(item, cancellationToken);
                         }
                         else
                         {
-                            // 不需要处理：直接生成结果写入结果通道，绕过 Worker
-                            // 这极大减少了线程调度的开销
+                            // 不需要处理 -> 直接进入 ResultChannel
                             await resultChannel.Writer.WriteAsync(
-                                new ImageResult(
-                                    item.ParentList, item.Index, item.FilePath, item.FilePath, true, null));
+                                new WorkResult(item.ParentList,
+                                item.Index,
+                                item.FilePath,
+                                item.FilePath,
+                                true,
+                                null));
                         }
                     }
 
-                    // 5. 关闭流程
-                    // a. 告知所有 Worker：不会有新任务了
-                    jobChannel.Writer.Complete();
+                    // --- 5. 关闭流水线 ---
+                    // A. 通知 Loader 已完成
+                    loadChannel.Writer.Complete();
+                    await loaderTask; // 等待所有文件加载进内存
 
-                    // b. 等待所有 Worker 完成手头的任务
-                    await Task.WhenAll(consumerTasks);
+                    // B. 通知 Processors 已完成
+                    processChannel.Writer.Complete();
+                    await Task.WhenAll(processorTasks); // 等待所有内存图片转换完成
 
-                    // c. 告知协调者：不会有新结果了
+                    // C. 通知 Saver 已完成
+                    saveChannel.Writer.Complete();
+                    await saverTask; // 等待所有结果写入磁盘
+
+                    // D. 通知 Coordinator 已完成
                     resultChannel.Writer.Complete();
+                    await coordinatorTask; // 等待所有 UI 更新完成
 
-                    // d. 等待协调者处理完剩余的 UI 更新和数据写入
-                    await coordinatorTask;
-
-                    // 6. 数据清理
+                    // --- 6. 数据清理 ---
                     // 统一清理处理失败的项 (null)
                     foreach (var fileList in allFileLists)
                         _ = fileList.RemoveAll(f => f == null);

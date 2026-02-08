@@ -7,19 +7,20 @@ namespace RanaPdfTool.Services;
 
 public class ImageService : IImageService
 {
-    public string ConvertPngToTempJpeg(string inputPath, int quality)
+    public void ConvertPngToTempJpegStream(Stream inputStream, Stream outputStream, int quality)
     {
-        using var image = Image.Load(inputPath);
+        // 重置流位置，确保从头读取
+        if (inputStream.CanSeek)
+            inputStream.Position = 0;
 
-        string tempFile = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString() + ".jpg");
+        using var image = Image.Load(inputStream);
 
         var encoder = new JpegEncoder
         {
             Quality = quality
         };
 
-        image.Save(tempFile, encoder);
-        return tempFile;
+        image.Save(outputStream, encoder);
     }
 
     public void SaveBytesAsJpeg(byte[] imageBytes, string outputPath, int quality)
