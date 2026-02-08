@@ -1,6 +1,7 @@
 ﻿using System.Reflection;
 
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.IO;
 
 using RanaPdfTool.Commands;
 using RanaPdfTool.Infrastructure;
@@ -19,6 +20,7 @@ public static class Program
 
         // 注册依赖
         _ = services
+            .AddSingleton<RecyclableMemoryStreamManager>()
             .AddSingleton<IImageService, ImageService>()
             .AddSingleton<IPdfService, PdfService>();
 

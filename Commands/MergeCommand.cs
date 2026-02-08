@@ -1,5 +1,7 @@
 ﻿using System.Threading.Channels;
 
+using Microsoft.IO;
+
 using NaturalSort.Extension;
 
 using RanaPdfTool.Models;
@@ -12,8 +14,13 @@ using Spectre.Console.Cli;
 
 namespace RanaPdfTool.Commands;
 
-public class MergeCommand(IPdfService pdfService, IImageService imageService) : AsyncCommand<MergeSettings>
+public class MergeCommand(
+    RecyclableMemoryStreamManager rmsManager,
+    IPdfService pdfService,
+    IImageService imageService
+    ) : AsyncCommand<MergeSettings>
 {
+    private readonly RecyclableMemoryStreamManager _rmsManager = rmsManager;
     private readonly IPdfService _pdfService = pdfService;
     private readonly IImageService _imageService = imageService;
 
@@ -344,7 +351,7 @@ public class MergeCommand(IPdfService pdfService, IImageService imageService) : 
                             await foreach (var job in processChannel.Reader.ReadAllAsync(cancellationToken))
                             {
                                 // 准备输出流
-                                var outStream = new MemoryStream();
+                                var outStream = _rmsManager.GetStream("ProcessorOutput");
                                 try
                                 {
                                     // CPU 操作
@@ -388,13 +395,23 @@ public class MergeCommand(IPdfService pdfService, IImageService imageService) : 
                     {
                         await foreach (var job in loadChannel.Reader.ReadAllAsync(cancellationToken))
                         {
+                            var memoryStream = _rmsManager.GetStream("LoaderInput");
                             try
                             {
                                 // IO 操作
-                                // 使用 MemoryStream 接管文件内容
-                                byte[] bytes = await File.ReadAllBytesAsync(job.FilePath);
-                                var memoryStream = new MemoryStream(bytes);
-
+                                // 直接将文件流 Copy 到池化的 MemoryStream
+                                using (var fs = new FileStream(
+                                    job.FilePath,
+                                    FileMode.Open,
+                                    FileAccess.Read,
+                                    FileShare.Read,
+                                    4096,
+                                    useAsync: true))
+                                {
+                                    await fs.CopyToAsync(memoryStream);
+                                }
+                                memoryStream.Position = 0; // 重置位置以便 Processor 读取
+                                
                                 // 发送给 Processor
                                 await processChannel.Writer.WriteAsync(
                                 new ProcessJob(
@@ -406,6 +423,7 @@ public class MergeCommand(IPdfService pdfService, IImageService imageService) : 
                             catch (Exception ex)
                             {
                                 // 如果加载失败，跳过中间步骤，直接报告错误
+                                await memoryStream.DisposeAsync(); // 清理没用上的内存流
                                 await resultChannel.Writer.WriteAsync(
                                 new WorkResult(
                                     job.ParentList,
