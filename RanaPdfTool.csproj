@@ -12,7 +12,7 @@
     <AssemblyName>RanaPdfTool</AssemblyName>
     <PackageOutputPath>./nupkg</PackageOutputPath>
 
-    <Version>4.1.1</Version>
+    <Version>4.1.2</Version>
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
   </PropertyGroup>
 

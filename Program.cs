@@ -16,10 +16,7 @@ public static class Program
 {
     public static async Task<int> Main(string[] args)
     {
-        var services = new ServiceCollection();
-
-        // 注册依赖
-        _ = services
+        var services = new ServiceCollection()
             .AddSingleton<RecyclableMemoryStreamManager>()
             .AddSingleton<IImageService, ImageService>()
             .AddSingleton<IPdfService, PdfService>();
