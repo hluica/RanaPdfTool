@@ -12,8 +12,11 @@
     <AssemblyName>RanaPdfTool</AssemblyName>
     <PackageOutputPath>./nupkg</PackageOutputPath>
 
-    <Version>4.1.2</Version>
+    <Version>4.1.3</Version>
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+
+    <ServerGarbageCollection>true</ServerGarbageCollection>
+    <ConcurrentGarbageCollection>true</ConcurrentGarbageCollection>
   </PropertyGroup>
 
   <ItemGroup>
