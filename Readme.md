@@ -25,51 +25,51 @@ RanaPdfTool 是一个基于 .NET 10 的命令行工具，用于处理图片文�
     </thead>
     <tbody>
         <tr>
-            <td rowspan="5">merge</td>
-            <td>-s|--source &lt;PATH&gt;</td>
+            <td rowspan="5"><code>merge</code></td>
+            <td><code>-s|--source &lt;PATH&gt;</code></td>
             <td>读取图片的源文件夹。<br>将递归读取源文件夹及其子文件夹。使用包含路径信息的自然排序确定 PDF 页面顺序。<br>如果存在子文件夹，会使用其名称作为 PDF 的书签。<br>目前，将被读取的图片文件类型被硬编码为 JPEG 和 PNG。</td>
         </tr>
         <tr>
-            <td>-d|--destination &lt;PATH&gt;</td>
+            <td><code>-d|--destination &lt;PATH&gt;</code></td>
             <td>PDF 文件的输出位置。<br>如果传入的是文件路径，则生成对应的文件；<br>如果传入的是目录路径，则在对应目录下生成与源文件夹同名的文件。<br>只有以 .pdf 结尾的路径会被视为文件名，其他所有情况都将被视为目录名。</td>
         </tr>
         <tr>
-            <td>-r|--resize</td>
+            <td><code>-r|--resize</code></td>
             <td>如果存在，则尝试在生成 PDF 时重设页面大小。<br>如果不存在，则保留图片原本的大小。<br>重设的页面大小将具有 A4 纸的宽度（595.276点 / 210毫米），但保持原始图片的宽高比。</td>
         </tr>
         <tr>
-            <td>-q|--quality</td>
-            <td>介于 1 和 100 之间的整数。如果不显式指定，将使用默认值 90。<br>指定 JPEG 图片的质量参数。<br>无法在显式指定该参数的同时传入 --raw 开关。</td>
+            <td><code>-q|--quality</code></td>
+            <td>介于 1 和 100 之间的整数。如果不显式指定，将使用默认值 90。<br>指定 JPEG 图片的质量参数。<br>无法在显式指定该参数的同时传入 <code>--raw</code> 开关。</td>
         </tr>
         <tr>
-            <td>--raw</td>
-            <td>如果存在，则尝试将非 JPEG 图像的原始数据完整存入 PDF 文件而不经过转换。<br>如果不存在，则将所有非 JPEG 格式以 --quality 指定的质量换为 JPEG 图片。<br>无法在显式指定该开关的同时传入 --quality 参数。</td>
+            <td><code>--raw</code></td>
+            <td>如果存在，则尝试将非 JPEG 图像的原始数据完整存入 PDF 文件而不经过转换。<br>如果不存在，则将所有非 JPEG 格式以 <code>--quality</code> 指定的质量换为 JPEG 图片。<br>无法在显式指定该开关的同时传入 <code>--quality</code> 参数。</td>
         </tr>
         <tr>
-            <td>resize</td>
-            <td>-f|--file &lt;FILE&gt;</td>
+            <td><code>resize</code></td>
+            <td><code>-f|--file &lt;FILE&gt;</code></td>
             <td>读取 PDF 文件的路径。</td>
         </tr>
         <tr>
-            <td rowspan="5">extract</td>
-            <td>-f|--file &lt;FILE&gt;</td>
+            <td rowspan="5"><code>extract</code></td>
+            <td><code>-f|--file &lt;FILE&gt;</code></td>
             <td>读取 PDF 文件的路径。</td>
         </tr>
         <tr>
-            <td>-d|--destination &lt;PATH&gt;</td>
+            <td><code>-d|--destination &lt;PATH&gt;</code></td>
             <td>图像文件的输出位置。只能是目录。</td>
         </tr>
         <tr>
-            <td>--subfolder</td>
+            <td><code>--subfolder</code></td>
             <td>如果存在，则在指定的输出目录中创建一个与文件同名的子文件夹，将提取出的图片文件存入该子文件夹。<br>如果不存在，则直接在指定的输出目录中存储输出的图片</td>
         </tr>
         <tr>
-            <td>-q|--quality</td>
-            <td>介于 1 和 100 之间的整数。如果不显式指定，将使用默认值 90。<br>指定其他格式图像转换为 JPEG 格式时使用的质量参数。<br>无法在显式指定该参数的同时传入 --raw 开关。</td>
+            <td><code>-q|--quality</code></td>
+            <td>介于 1 和 100 之间的整数。如果不显式指定，将使用默认值 90。<br>指定其他格式图像转换为 JPEG 格式时使用的质量参数。<br>无法在显式指定该参数的同时传入 <code>--raw</code> 开关。</td>
         </tr>
         <tr>
-            <td>--raw</td>
-            <td>如果存在，则尝试将 PDF 中的非 JPEG 编码图像还原成它原本的格式。<br>如果不存在，则将 PDF 中的非 JPEG 编码图像以 --quality 参数指定的质量转换为 JPEG 编码，再输出为文件。<br>无法识别的格式会使用 .dat 格式存储。<br>无法在显式指定该开关的同时传入 --quality 参数。</td>
+            <td><code>--raw</code></td>
+            <td>如果存在，则尝试将 PDF 中的非 JPEG 编码图像还原成它原本的格式。<br>如果不存在，则将 PDF 中的非 JPEG 编码图像以 <code>--quality</code> 参数指定的质量转换为 JPEG 编码，再输出为文件。<br>无法识别的格式会使用 .dat 格式存储。<br>无法在显式指定该开关的同时传入 <code>--quality</code> 参数。</td>
         </tr>
     </tbody>
 </table>
@@ -82,7 +82,17 @@ RanaPdfTool 是一个基于 .NET 10 的命令行工具，用于处理图片文�
 - 然后使用 `dotnet tool install RanaPdfTool --global --add-source .\nupkg\` 从本地安装工具。
 - 可以在安装命令末尾增加`--version x.y.z`参数以指定具体的安装版本。
 
-## 版本历史记录
+## 开发
+
+### 依赖项
+
+- [itext](https://github.com/itext/itext-dotnet): 用于为读写 PDF 文件提供支持。
+- [Microsoft.IO.RecyclableMemoryStream](https://github.com/microsoft/Microsoft.IO.RecyclableMemoryStream): 用于配置高性能的池化内存流。
+- [NaturalSort.Extension](https://github.com/tompazourek/NaturalSort.Extension): 用于为配置自然排序比较器提供支持。
+- [SixLabors.ImageSharp](https://github.com/SixLabors/ImageSharp): 用于为图片重编码（合并时）及格式检测（提取时）提供支持。
+- [Spectre.Console](https://github.com/spectreconsole/spectre.console): 作为控制台程序框架，为参数解析与终端渲染提供支持。
+
+### 版本历史记录
 
 | 版本号 | 发布日期 | 更新内容                                                                                                                       |
 | ------ | -------- | ------------------------------------------------------------------------------------------------------------------------------ |
@@ -108,4 +118,4 @@ RanaPdfTool 是一个基于 .NET 10 的命令行工具，用于处理图片文�
 
 ## 许可证
 
-[AGPL](LICENSE.txt)
+由于 iText 的许可证限制，本项目使用 [AGPLv3](LICENSE.txt)。
