@@ -96,6 +96,7 @@ RanaPdfTool 是一个基于 .NET 10 的命令行工具，用于处理图片文�
 
 | 版本号 | 发布日期 | 更新内容                                                                                                                       |
 | ------ | -------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| v4.1.4 | 26-02-19 | 更新依赖：Microsoft.Extensions.DependencyInjection, 10.0.2 -> 10.0.3                                                           |
 | v4.1.3 | 26-02-11 | 为 RecyclableMemoryStream 提供自定义配置，以优化内存使用；使用 Server GC 和 Concurrent GC，以避免内存占用过高。                |
 | v4.1.2 | 26-02-09 | 继续改进并行代码。                                                                                                             |
 | v4.1.1 | 26-02-09 | 使用 Microsoft.IO.RecyclableMemoryStream 替换标准的 System.IO.MemoryStream 以取得更高性能。                                    |
