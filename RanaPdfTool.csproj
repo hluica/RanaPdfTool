@@ -7,9 +7,7 @@
     <Nullable>enable</Nullable>
 
     <PackAsTool>true</PackAsTool>
-    <PackageId>RanaPdfTool</PackageId>
     <ToolCommandName>RanaPdfTool</ToolCommandName>
-    <AssemblyName>RanaPdfTool</AssemblyName>
     <PackageOutputPath>./nupkg</PackageOutputPath>
 
     <Version>4.2.0</Version>
