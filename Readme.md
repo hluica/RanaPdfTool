@@ -46,9 +46,17 @@ RanaPdfTool 是一个基于 .NET 10 的命令行工具，用于处理图片文�
             <td>如果存在，则尝试将非 JPEG 图像的原始数据完整存入 PDF 文件而不经过转换。<br>如果不存在，则将所有非 JPEG 格式以 <code>--quality</code> 指定的质量换为 JPEG 图片。<br>无法在显式指定该开关的同时传入 <code>--quality</code> 参数。</td>
         </tr>
         <tr>
-            <td><code>resize</code></td>
+            <td rowspan="3"><code>resize</code></td>
             <td><code>-f|--file &lt;FILE&gt;</code></td>
             <td>读取 PDF 文件的路径。</td>
+        </tr>
+        <tr>
+            <td><code>-o|--overwrite</code></td>
+            <td>覆盖原始 PDF 文件而不是创建新文件。</td>
+        </tr>
+        <tr>
+            <td><code>-s|--suffix &lt;SUFFIX&gt;</code></td>
+            <td>新 PDF 文件的后缀。<br>默认的后缀是 <code>resized</code>，文件名和后缀之间存在不可更改的下划线。<br>如果存在 <code>--overwrite</code> 开关，则忽略此参数。</td>
         </tr>
         <tr>
             <td rowspan="5"><code>extract</code></td>
@@ -96,6 +104,7 @@ RanaPdfTool 是一个基于 .NET 10 的命令行工具，用于处理图片文�
 
 | 版本号 | 发布日期 | 更新内容                                                                                                                       |
 | ------ | -------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| v4.2.0 | 26-02-26 | 为 `resize` 命令添加 `--suffix` 和 `--overwrite` 参数，提高命令可定制性；更新`resize` 命令生成文件的默认后缀。                                        |
 | v4.1.4 | 26-02-19 | 更新依赖：Microsoft.Extensions.DependencyInjection, 10.0.2 -> 10.0.3                                                           |
 | v4.1.3 | 26-02-11 | 为 RecyclableMemoryStream 提供自定义配置，以优化内存使用；使用 Server GC 和 Concurrent GC，以避免内存占用过高。                |
 | v4.1.2 | 26-02-09 | 继续改进并行代码。                                                                                                             |

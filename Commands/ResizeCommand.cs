@@ -25,12 +25,12 @@ public class ResizeCommand(IPdfService pdfService) : AsyncCommand<ResizeSettings
 
         string dir = Path.GetDirectoryName(inputFile)!;
         string name = Path.GetFileNameWithoutExtension(inputFile);
-        string outputFile = Path.Combine(dir, $"{name}_modified.pdf");
-        string outputLink = MarkupHelper.FileLinkMarkup(outputFile);
+        string workingOutputFile = Path.Combine(dir, $"{name}_{settings.Suffix}.pdf");
 
         var errors = new ConcurrentBag<(string context, Exception exception)>();
         bool hasCriticalFailure = false;
 
+        // 生成临时文件
         try
         {
             await AnsiConsole
@@ -50,7 +50,7 @@ public class ResizeCommand(IPdfService pdfService) : AsyncCommand<ResizeSettings
                     await Task.Run(() =>
                         _pdfService.ResizePdfPages(
                             inputFile,
-                            outputFile,
+                            workingOutputFile,
                             onProgress: (p) => task.Value = p,
                             onPageError: (pageNum, ex) => errors.Add(($"Page {pageNum}", ex))
                         ));
@@ -62,14 +62,10 @@ public class ResizeCommand(IPdfService pdfService) : AsyncCommand<ResizeSettings
             hasCriticalFailure = true;
         }
 
-        if (errors.IsEmpty)
+        // 显示生成中的错误
+        if (!errors.IsEmpty)
         {
-            AnsiConsole.MarkupLine($"[green]Modified file saved to:[/] {outputLink}");
-            return 0;
-        }
-        else
-        {
-            AnsiConsole.MarkupLine($"[yellow]Process completed with {errors.Count} errors[/].");
+            AnsiConsole.MarkupLine($"[yellow]Page processing completed with {errors.Count} errors[/].");
             if (hasCriticalFailure)
                 AnsiConsole.MarkupLine("[red bold]Including CRITICAL ERROR.[/]");
             AnsiConsole.Write(new Rule("[red]Page Failures[/]").LeftJustified());
@@ -81,5 +77,29 @@ public class ResizeCommand(IPdfService pdfService) : AsyncCommand<ResizeSettings
             }
             return 1;
         }
+
+        // 文件路由和保存
+        string finalPath = workingOutputFile;
+        if (settings.Overwrite)
+        {
+            try
+            {
+                // 保存且覆盖原文件：使用原子移动。
+                File.Move(workingOutputFile, inputFile, overwrite: true);
+                finalPath = inputFile;
+            }
+            catch (Exception ex)
+            {
+                AnsiConsole.MarkupLine($"[red]Error overwriting original file:[/]");
+                AnsiConsole.WriteException(ex, ExceptionFormats.ShortenEverything);
+                return 1;
+            }
+        }
+
+        // 保存但不覆盖：直接使用临时文件。
+        string outputLink = MarkupHelper.FileLinkMarkup(finalPath);
+        string actionText = settings.Overwrite ? "Overwritten" : "Saved";
+        AnsiConsole.MarkupLine($"[green]Modified file {actionText} to:[/] {outputLink}");
+        return 0;
     }
 }
