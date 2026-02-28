@@ -13,6 +13,9 @@ public class ResizeCommand(IPdfService pdfService) : AsyncCommand<ResizeSettings
 {
     private readonly IPdfService _pdfService = pdfService;
 
+    private static readonly Color _processingAccentColor = ColorHelper.GetWindowsAccentColor(Color.Yellow);
+    private static readonly Color _finishedAccentColor = ColorHelper.GetWindowsAccentColor(Color.Green);
+
     public override async Task<int> ExecuteAsync(CommandContext context, ResizeSettings settings, CancellationToken cancellationToken)
     {
         string inputFile = PathHelper.ResolveAbsolutePath(settings.FilePath);
@@ -40,10 +43,17 @@ public class ResizeCommand(IPdfService pdfService) : AsyncCommand<ResizeSettings
                     new TaskDescriptionColumn(),
                     new ProgressBarColumn
                     {
-                        CompletedStyle = new Style(ColorHelper.GetWindowsAccentColor(Color.Yellow)),
+                        CompletedStyle = new Style(_processingAccentColor),
+                        FinishedStyle = new Style(_finishedAccentColor)
                     },
-                    new PercentageColumn(),
-                    new SpinnerColumn(),
+                    new PercentageColumn
+                    {
+                        CompletedStyle = new Style(_finishedAccentColor),
+                    },
+                    new SpinnerColumn
+                    {
+                        Style = new Style(_processingAccentColor),
+                    },
                     new ElapsedTimeColumn(),
                 ])
                 .StartAsync(async ctx =>

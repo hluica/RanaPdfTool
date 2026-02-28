@@ -18,11 +18,14 @@ public class MergeCommand(
     RecyclableMemoryStreamManager rmsManager,
     IPdfService pdfService,
     IImageService imageService
-    ) : AsyncCommand<MergeSettings>
+) : AsyncCommand<MergeSettings>
 {
     private readonly RecyclableMemoryStreamManager _rmsManager = rmsManager;
     private readonly IPdfService _pdfService = pdfService;
     private readonly IImageService _imageService = imageService;
+
+    private static readonly Color _processingAccentColor = ColorHelper.GetWindowsAccentColor(Color.Yellow);
+    private static readonly Color _finishedAccentColor = ColorHelper.GetWindowsAccentColor(Color.Green);
 
     private static readonly int _cpuCount = Math.Max(1, Environment.ProcessorCount - 1); // 保留一个核心给系统和UI
     private static readonly int _boundedCapacity = Math.Clamp(_cpuCount * 2, 10, 50); // 并行通道的容量，防止OOM
@@ -213,10 +216,17 @@ public class MergeCommand(
                     new TaskDescriptionColumn(),
                     new ProgressBarColumn
                     {
-                        CompletedStyle = new Style(ColorHelper.GetWindowsAccentColor(Color.Yellow)),
+                        CompletedStyle = new Style(_processingAccentColor),
+                        FinishedStyle = new Style(_finishedAccentColor)
                     },
-                    new PercentageColumn(),
-                    new SpinnerColumn(),
+                    new PercentageColumn
+                    {
+                        CompletedStyle = new Style(_finishedAccentColor),
+                    },
+                    new SpinnerColumn
+                    {
+                        Style = new Style(_processingAccentColor),
+                    },
                     new ElapsedTimeColumn(),
                 ])
                 .StartAsync(async ctx =>
