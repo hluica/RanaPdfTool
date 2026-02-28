@@ -11,7 +11,7 @@ public static class ColorHelper
     public static Color GetWindowsAccentColor(Color defaultColor)
     {
         // 1. 检测是否为 Windows 平台
-        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        if (!OperatingSystem.IsWindows())
             return defaultColor;
 
         try
