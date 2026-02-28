@@ -38,7 +38,10 @@ public class ResizeCommand(IPdfService pdfService) : AsyncCommand<ResizeSettings
                 .AutoClear(false)
                 .Columns([
                     new TaskDescriptionColumn(),
-                    new ProgressBarColumn(),
+                    new ProgressBarColumn
+                    {
+                        CompletedStyle = new Style(ColorHelper.GetWindowsAccentColor(Color.Yellow)),
+                    },
                     new PercentageColumn(),
                     new SpinnerColumn(),
                     new ElapsedTimeColumn(),

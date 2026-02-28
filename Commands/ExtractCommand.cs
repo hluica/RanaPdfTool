@@ -51,7 +51,10 @@ public class ExtractCommand(IPdfService pdfService) : AsyncCommand<ExtractSettin
                 .AutoClear(false)
                 .Columns([
                     new TaskDescriptionColumn(),
-                    new ProgressBarColumn(),
+                    new ProgressBarColumn
+                    {
+                        CompletedStyle = new Style(ColorHelper.GetWindowsAccentColor(Color.Yellow)),
+                    },
                     new PercentageColumn(),
                     new SpinnerColumn(),
                     new ElapsedTimeColumn(),
