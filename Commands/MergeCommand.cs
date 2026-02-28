@@ -74,7 +74,7 @@ public class MergeCommand(
 
         if (!Directory.Exists(sourceDir))
         {
-            AnsiConsole.MarkupLine($"[red][bold]Error:[/] Source directory not found - [underline]{Markup.Escape(sourceDir)}[/]");
+            AnsiConsole.MarkupLine($"[red][[ERROR]][/] Source directory not found: [red underline]{Markup.Escape(sourceDir)}[/]");
             return 1;
         }
 
@@ -99,7 +99,7 @@ public class MergeCommand(
             // 边界检查：检查是否存在与目标文件“同名”的文件夹
             if (Directory.Exists(rawDestPath))
             {
-                AnsiConsole.MarkupLine($"[red bold]Error:[/] Cannot create file [yellow]{Markup.Escape(Path.GetFileName(rawDestPath))}[/]. A folder with the same name already exists at destination.");
+                AnsiConsole.MarkupLine($"[red][[ERROR]][/] Cannot create file [red underline]{Markup.Escape(Path.GetFileName(rawDestPath))}[/]. A folder with the same name already exists at destination.");
                 return 1;
             }
 
@@ -128,14 +128,14 @@ public class MergeCommand(
             if (Path.HasExtension(rawDestPath))
             {
                 string ext = Path.GetExtension(rawDestPath);
-                AnsiConsole.MarkupLine($"[yellow bold]Notice:[/] The input '[bold]{Markup.Escape(ext)}[/]' is not a [blue].pdf[/] extension.");
-                AnsiConsole.MarkupLine($"[yellow bold]Notice:[/] The path will be treated as a [yellow]directory[/], and the PDF will be generated inside it.");
+                AnsiConsole.MarkupLine($"[yellow][[WARNING]][/] The input '[yellow]{Markup.Escape(ext)}[/]' is not a [blue].pdf[/] extension.");
+                AnsiConsole.MarkupLine($"[yellow][[WARNING]][/] The path will be treated as a [bold]directory[/], and the PDF will be generated inside it.");
             }
 
             // 边界检查：检查该路径是否已经是一个“文件”了
             if (File.Exists(rawDestPath))
             {
-                AnsiConsole.MarkupLine($"[red bold]Error:[/] Destination path [underline]{Markup.Escape(rawDestPath)}[/] exists and is a file. Please specify a directory or a new .pdf filename.");
+                AnsiConsole.MarkupLine($"[red][[ERROR]][/] Destination path [red underline]{Markup.Escape(rawDestPath)}[/] exists and is a file. Please specify a directory or a new .pdf filename.");
                 return 1;
             }
 
@@ -190,7 +190,7 @@ public class MergeCommand(
         }
         catch (Exception ex)
         {
-            AnsiConsole.MarkupLine($"[red]Error scanning files:[/]");
+            AnsiConsole.MarkupLine($"[red][[ERROR]][/] Unexpected Error Happened:");
             AnsiConsole.WriteException(ex, ExceptionFormats.ShortenEverything);
             return 1;
         }
@@ -199,7 +199,7 @@ public class MergeCommand(
 
         if (totalFiles == 0)
         {
-            AnsiConsole.MarkupLine("[yellow]No images found in source directory.[/]");
+            AnsiConsole.MarkupLine("[yellow][[WARNING]][/] No images found in source directory.");
             return 0;
         }
 
@@ -529,7 +529,7 @@ public class MergeCommand(
                     int validFileCount = rootNode.TotalFileCount();
                     if (validFileCount == 0)
                     {
-                        AnsiConsole.MarkupLine($"[yellow]No valid files found for PDF generation.[/]");
+                        AnsiConsole.MarkupLine($"[yellow][[WARNING]][/] No valid files found for PDF generation.");
                         return;
                     }
 
@@ -573,20 +573,20 @@ public class MergeCommand(
         // --- 结果汇总 ---
         if (errors.Count == 0)
         {
-            AnsiConsole.MarkupLine($"[green]Successfully created:[/] {finalPdfLink}");
+            AnsiConsole.MarkupLine($"[green][[SUCCESS]][/] Successfully created: {finalPdfLink}");
             return 0;
         }
         else
         {
             // 如果生成了部分文件，提示位置
             if (File.Exists(finalPdfPath))
-                AnsiConsole.MarkupLine($"[yellow]PDF created with warnings at:[/] {finalPdfLink}");
+                AnsiConsole.MarkupLine($"[yellow][[WARNING]][/] PDF created with warnings at: {finalPdfLink}");
 
-            AnsiConsole.MarkupLine($"[yellow]Completed with {errors.Count} errors[/].");
+            AnsiConsole.MarkupLine($"[red][[ERROR]][/] Completed with [red bold]{errors.Count}[/] errors.");
             if (hasCriticalFailure)
-                AnsiConsole.MarkupLine("[red bold]Including CRITICAL ERROR.[/]");
+                AnsiConsole.MarkupLine("[red][[ERROR]][/] Including [bold]CRITICAL ERROR[/].");
 
-            AnsiConsole.Write(new Rule("[red]Failures[/]").LeftJustified());
+            AnsiConsole.Write(new Rule("[red]Merge Failures[/]").LeftJustified());
 
             foreach (var (ctxName, exception) in errors)
             {

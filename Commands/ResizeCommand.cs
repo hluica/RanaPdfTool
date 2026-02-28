@@ -18,11 +18,16 @@ public class ResizeCommand(IPdfService pdfService) : AsyncCommand<ResizeSettings
 
     public override async Task<int> ExecuteAsync(CommandContext context, ResizeSettings settings, CancellationToken cancellationToken)
     {
-        string inputFile = PathHelper.ResolveAbsolutePath(settings.FilePath);
+        var (fileOk, inputFile) = CliGuard.TryRun<string, ArgumentException>(
+            () => PathHelper.ResolveAbsolutePath(settings.FilePath),
+            $"Invalid file path: {settings.FilePath}");
+
+        if (!fileOk || string.IsNullOrEmpty(inputFile))
+            return 1;
 
         if (!File.Exists(inputFile) || !Path.GetExtension(inputFile).Equals(".pdf", StringComparison.CurrentCultureIgnoreCase))
         {
-            AnsiConsole.MarkupLine($"[red][bold]Error:[/] Invalid PDF file - [/]{Markup.Escape(inputFile)}");
+            AnsiConsole.MarkupLine($"[red][[ERROR]][/] Invalid PDF file: [red underline]{Markup.Escape(inputFile)}[/]");
             return 1;
         }
 
@@ -78,13 +83,13 @@ public class ResizeCommand(IPdfService pdfService) : AsyncCommand<ResizeSettings
         // 显示生成中的错误
         if (!errors.IsEmpty)
         {
-            AnsiConsole.MarkupLine($"[yellow]Page processing completed with {errors.Count} errors[/].");
+            AnsiConsole.MarkupLine($"[red][[ERROR]][/] Page processing completed with [red bold]{errors.Count}[/] errors.");
             if (hasCriticalFailure)
-                AnsiConsole.MarkupLine("[red bold]Including CRITICAL ERROR.[/]");
+                AnsiConsole.MarkupLine("[red][[ERROR]][/] Including [bold]CRITICAL ERROR[/].");
             AnsiConsole.Write(new Rule("[red]Page Failures[/]").LeftJustified());
             foreach (var (ctxStr, exception) in errors)
             {
-                AnsiConsole.MarkupLine($"[gray bold]Context:[/] {Markup.Escape(ctxStr)}");
+                AnsiConsole.MarkupLine($"[gray bold]Context:[/] [underline]{Markup.Escape(ctxStr)}[/]");
                 AnsiConsole.WriteException(exception, ExceptionFormats.ShortenEverything);
                 AnsiConsole.WriteLine();
             }
@@ -103,7 +108,7 @@ public class ResizeCommand(IPdfService pdfService) : AsyncCommand<ResizeSettings
             }
             catch (Exception ex)
             {
-                AnsiConsole.MarkupLine($"[red]Error overwriting original file:[/]");
+                AnsiConsole.MarkupLine($"[red][[ERROR]][/] Error overwriting original file:");
                 AnsiConsole.WriteException(ex, ExceptionFormats.ShortenEverything);
                 return 1;
             }
@@ -112,7 +117,7 @@ public class ResizeCommand(IPdfService pdfService) : AsyncCommand<ResizeSettings
         // 保存但不覆盖：直接使用临时文件。
         string outputLink = MarkupHelper.FileLinkMarkup(finalPath);
         string actionText = settings.Overwrite ? "Overwritten" : "Saved";
-        AnsiConsole.MarkupLine($"[green]Modified file {actionText} to:[/] {outputLink}");
+        AnsiConsole.MarkupLine($"[green][[SUCCESS]][/] Modified file {actionText} to: {outputLink}");
         return 0;
     }
 }

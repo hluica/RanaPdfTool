@@ -20,11 +20,16 @@ public class ExtractCommand(IPdfService pdfService) : AsyncCommand<ExtractSettin
     {
         int jpgQuality = settings.Quality ?? 90;
 
-        string inputFile = PathHelper.ResolveAbsolutePath(settings.FilePath);
+        var (fileOk, inputFile) = CliGuard.TryRun<string, ArgumentException>(
+            () => PathHelper.ResolveAbsolutePath(settings.FilePath),
+            $"Invalid file path: {settings.FilePath}");
+
+        if (!fileOk || string.IsNullOrEmpty(inputFile))
+            return 1;
 
         if (!File.Exists(inputFile) || !Path.GetExtension(inputFile).Equals(".pdf", StringComparison.CurrentCultureIgnoreCase))
         {
-            AnsiConsole.MarkupLine($"[red][bold]Error:[/] Invalid PDF file - [/]{Markup.Escape(inputFile)}");
+            AnsiConsole.MarkupLine($"[red][[ERROR]][/] Invalid PDF file: [red underline]{Markup.Escape(inputFile)}[/]");
             return 1;
         }
 
@@ -92,18 +97,18 @@ public class ExtractCommand(IPdfService pdfService) : AsyncCommand<ExtractSettin
 
         if (errors.IsEmpty)
         {
-            AnsiConsole.MarkupLine($"[green]Images extracted to:[/] {finalOutputLink}");
+            AnsiConsole.MarkupLine($"[green][[SUCCESS]][/] Images extracted to: {finalOutputLink}");
             return 0;
         }
         else
         {
-            AnsiConsole.MarkupLine($"[yellow]Extraction completed with {errors.Count} errors[/].");
+            AnsiConsole.MarkupLine($"[red][[ERROR]][/] Extraction completed with [red bold]{errors.Count}[/] errors.");
             if (hasCriticalFailure)
-                AnsiConsole.MarkupLine("[red bold]Including CRITICAL ERROR.[/]");
-            AnsiConsole.Write(new Rule("[red]Extraction Failures[/]").LeftJustified());
+                AnsiConsole.MarkupLine("[red][[ERROR]][/] Including [bold]CRITICAL ERROR[/].");
+            AnsiConsole.Write(new Rule("[red]Extract Failures[/]").LeftJustified());
             foreach (var (ctxStr, exception) in errors)
             {
-                AnsiConsole.MarkupLine($"[gray bold]Context:[/] {Markup.Escape(ctxStr)}");
+                AnsiConsole.MarkupLine($"[gray bold]Context:[/] [underline]{Markup.Escape(ctxStr)}[/]");
                 AnsiConsole.WriteException(exception, ExceptionFormats.ShortenEverything);
                 AnsiConsole.WriteLine();
             }

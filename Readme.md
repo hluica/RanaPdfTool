@@ -104,12 +104,13 @@ RanaPdfTool 是一个基于 .NET 10 的命令行工具，用于处理图片文�
 - [Microsoft.IO.RecyclableMemoryStream](https://github.com/microsoft/Microsoft.IO.RecyclableMemoryStream): 用于配置高性能的池化内存流。
 - [NaturalSort.Extension](https://github.com/tompazourek/NaturalSort.Extension): 用于为配置自然排序比较器提供支持。
 - [SixLabors.ImageSharp](https://github.com/SixLabors/ImageSharp): 用于为图片重编码（合并时）及格式检测（提取时）提供支持。
-- [Spectre.Console](https://github.com/spectreconsole/spectre.console): 作为控制台程序框架，为参数解析与终端渲染提供支持。
+- [Spectre.Console](https://github.com/spectreconsole/spectre.console) 与 Spectre.Console.Cli: 作为终端文本格式化工具和控制台程序框架，为终端渲染与参数解析提供支持。
 
 ### 版本历史记录
 
 | 版本号 | 发布日期 | 更新内容                                                                                                                       |
 | ------ | -------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| v4.2.2 | 26-02-28 | 修复路径解析中潜在的错误；优化终端输出信息的显示效果。                                                                         |
 | v4.2.1 | 26-02-28 | 更新 TUI 进度条组件的显示效果。                                                                                                |
 | v4.2.0 | 26-02-26 | 为 `resize` 命令添加 `--suffix` 和 `--overwrite` 参数，提高命令可定制性；更新`resize` 命令生成文件的默认后缀。                 |
 | v4.1.4 | 26-02-19 | 更新依赖：Microsoft.Extensions.DependencyInjection, 10.0.2 -> 10.0.3                                                           |
