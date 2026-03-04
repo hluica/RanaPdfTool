@@ -90,11 +90,17 @@ RanaPdfTool 是一个基于 .NET 10 的命令行工具，用于处理图片文�
 
 ## 安装
 
-- 本工具作为 dotnet 全局工具安装。
-- 自行安装 .NET 10 SDK。
-- clone 存储库后，cd 到存储库目录，使用 `dotnet pack` 打包。
-- 然后使用 `dotnet tool install RanaPdfTool --global --add-source .\nupkg\` 从本地安装工具。
-- 可以在安装命令末尾增加`--version x.y.z`参数以指定具体的安装版本。
+RanaPdfTool 是一个 .NET 全局工具。获取软件包 `.nupkg` 文件后，可以通过以下命令安装：
+```powershell
+dotnet tool install RanaPdfTool --global --add-source <Source_Path> [--version <Version>]
+```
+其中 `<Source_Path>` 是包含 `.nupkg` 文件的目录路径（允许使用相对路径）；`<Version>` 是 `.nupkg` 文件名中列出的版本，当 `<Source_Path>` 目录内只有一个 `.nupkg` 文件时可以省略。
+
+您可以从 Release 页面下载 `.nupkg` 文件，或者手动构建：
+- 安装 .NET SDK；
+- Clone 存储库，进入仓库根目录；
+- 执行 `dotnet pack` 指令。
+- 生成的`.nupkg` 文件将存储在仓库的 `/nupkg` 目录下。
 
 ## 开发
 
