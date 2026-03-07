@@ -7,7 +7,9 @@ using RanaPdfTool.Commands;
 using RanaPdfTool.Infrastructure;
 using RanaPdfTool.Services;
 using RanaPdfTool.Services.Interfaces;
+using RanaPdfTool.Utils;
 
+using Spectre.Console;
 using Spectre.Console.Cli;
 
 namespace RanaPdfTool;
@@ -50,6 +52,15 @@ public static class Program
 
             _ = config.AddCommand<ExtractCommand>("extract")
                 .WithDescription("Extracts images from a PDF file.");
+
+            _ = config.SetExceptionHandler((ex, _) =>
+            {
+                StdErr.MarkupLine("[red][[ERROR]][/] [white]Unexpected Error Happened:[/]");
+                StdErr.WriteException(ex, ExceptionFormats.ShortenEverything);
+
+                // -1: exceptions handled by framework automatically; 1: exceptions handled in program manually.
+                return -1;
+            });
         });
 
         return await app.RunAsync(args);

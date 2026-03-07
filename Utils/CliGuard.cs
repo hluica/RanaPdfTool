@@ -32,7 +32,7 @@ public static class CliGuard
         catch (Exception ex)
         {
             // 场景 2：意外崩溃 -> 甩出完整堆栈供开发者调试
-            StdErr.MarkupLine("[red][[ERROR]][/] Unexpected Error Happened:");
+            StdErr.MarkupLine("[red][[ERROR]][/] [white]Unexpected Error Happened:[/]");
             StdErr.WriteException(ex, ExceptionFormats.ShortenEverything);
             return (false, default);
         }
@@ -58,7 +58,7 @@ public static class CliGuard
         }
         catch (Exception ex)
         {
-            StdErr.MarkupLine("[red][[ERROR]][/] Unexpected Error Happened:");
+            StdErr.MarkupLine("[red][[ERROR]][/] [white]Unexpected Error Happened:[/]");
             StdErr.WriteException(ex, ExceptionFormats.ShortenEverything);
             return false;
         }

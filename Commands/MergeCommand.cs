@@ -187,7 +187,7 @@ public class MergeCommand(
         }
         catch (Exception ex)
         {
-            StdErr.MarkupLine($"[red][[ERROR]][/] Unexpected Error Happened:");
+            StdErr.MarkupLine($"[red][[ERROR]][/] [white]Unexpected Error Happened:[/]");
             StdErr.WriteException(ex, ExceptionFormats.ShortenEverything);
             return 1;
         }
