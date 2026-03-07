@@ -1,6 +1,4 @@
-﻿using System.Runtime.InteropServices;
-
-using Microsoft.Win32;
+﻿using Microsoft.Win32;
 
 using Spectre.Console;
 
@@ -8,6 +6,12 @@ namespace RanaPdfTool.Utils;
 
 public static class ColorHelper
 {
+    public static Color ProcessingAccentColor { get; }
+        = GetWindowsAccentColor(Color.Yellow);
+
+    public static Color FinishedAccentColor { get; }
+        = GetWindowsAccentColor(Color.Green);
+
     public static Color GetWindowsAccentColor(Color defaultColor)
     {
         // 1. 检测是否为 Windows 平台

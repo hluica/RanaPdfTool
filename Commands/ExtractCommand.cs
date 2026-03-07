@@ -13,9 +13,6 @@ public class ExtractCommand(IPdfService pdfService) : AsyncCommand<ExtractSettin
 {
     private readonly IPdfService _pdfService = pdfService;
 
-    private static readonly Color _processingAccentColor = ColorHelper.GetWindowsAccentColor(Color.Yellow);
-    private static readonly Color _finishedAccentColor = ColorHelper.GetWindowsAccentColor(Color.Green);
-
     public override async Task<int> ExecuteAsync(CommandContext context, ExtractSettings settings, CancellationToken cancellationToken)
     {
         int jpgQuality = settings.Quality ?? 90;
@@ -29,7 +26,7 @@ public class ExtractCommand(IPdfService pdfService) : AsyncCommand<ExtractSettin
 
         if (!File.Exists(inputFile) || !Path.GetExtension(inputFile).Equals(".pdf", StringComparison.CurrentCultureIgnoreCase))
         {
-            AnsiConsole.MarkupLine($"[red][[ERROR]][/] Invalid PDF file: [red underline]{Markup.Escape(inputFile)}[/]");
+            StdErr.MarkupLine($"[red][[ERROR]][/] Invalid PDF file: [red underline]{Markup.Escape(inputFile)}[/]");
             return 1;
         }
 
@@ -61,16 +58,16 @@ public class ExtractCommand(IPdfService pdfService) : AsyncCommand<ExtractSettin
                     new TaskDescriptionColumn(),
                     new ProgressBarColumn
                     {
-                        CompletedStyle = new Style(_processingAccentColor),
-                        FinishedStyle = new Style(_finishedAccentColor)
+                        CompletedStyle = new Style(ColorHelper.ProcessingAccentColor),
+                        FinishedStyle = new Style(ColorHelper.FinishedAccentColor)
                     },
                     new PercentageColumn
                     {
-                        CompletedStyle = new Style(_finishedAccentColor),
+                        CompletedStyle = new Style(ColorHelper.FinishedAccentColor),
                     },
                     new SpinnerColumn
                     {
-                        Style = new Style(_processingAccentColor),
+                        Style = new Style(ColorHelper.ProcessingAccentColor),
                     },
                     new ElapsedTimeColumn(),
                 ])
@@ -97,20 +94,20 @@ public class ExtractCommand(IPdfService pdfService) : AsyncCommand<ExtractSettin
 
         if (errors.IsEmpty)
         {
-            AnsiConsole.MarkupLine($"[green][[SUCCESS]][/] Images extracted to: {finalOutputLink}");
+            AnsiConsole.MarkupLine($"[green][[SUCCESS]][/] Images extracted to: [green underline]{finalOutputLink}[/]");
             return 0;
         }
         else
         {
-            AnsiConsole.MarkupLine($"[red][[ERROR]][/] Extraction completed with [red bold]{errors.Count}[/] errors.");
+            StdErr.MarkupLine($"[red][[ERROR]][/] Extraction completed with [red bold]{errors.Count}[/] errors.");
             if (hasCriticalFailure)
-                AnsiConsole.MarkupLine("[red][[ERROR]][/] Including [bold]CRITICAL ERROR[/].");
-            AnsiConsole.Write(new Rule("[red]Extract Failures[/]").LeftJustified());
+                StdErr.MarkupLine("[red][[ERROR]][/] Including [bold]CRITICAL ERROR[/].");
+            StdErr.Write(new Rule("[red]Extract Failures[/]").LeftJustified());
             foreach (var (ctxStr, exception) in errors)
             {
-                AnsiConsole.MarkupLine($"[gray bold]Context:[/] [underline]{Markup.Escape(ctxStr)}[/]");
-                AnsiConsole.WriteException(exception, ExceptionFormats.ShortenEverything);
-                AnsiConsole.WriteLine();
+                StdErr.MarkupLine($"[gray bold]Context:[/] [underline]{Markup.Escape(ctxStr)}[/]");
+                StdErr.WriteException(exception, ExceptionFormats.ShortenEverything);
+                StdErr.WriteLine();
             }
             return 1;
         }

@@ -13,9 +13,6 @@ public class ResizeCommand(IPdfService pdfService) : AsyncCommand<ResizeSettings
 {
     private readonly IPdfService _pdfService = pdfService;
 
-    private static readonly Color _processingAccentColor = ColorHelper.GetWindowsAccentColor(Color.Yellow);
-    private static readonly Color _finishedAccentColor = ColorHelper.GetWindowsAccentColor(Color.Green);
-
     public override async Task<int> ExecuteAsync(CommandContext context, ResizeSettings settings, CancellationToken cancellationToken)
     {
         var (fileOk, inputFile) = CliGuard.TryRun<string, ArgumentException>(
@@ -27,7 +24,7 @@ public class ResizeCommand(IPdfService pdfService) : AsyncCommand<ResizeSettings
 
         if (!File.Exists(inputFile) || !Path.GetExtension(inputFile).Equals(".pdf", StringComparison.CurrentCultureIgnoreCase))
         {
-            AnsiConsole.MarkupLine($"[red][[ERROR]][/] Invalid PDF file: [red underline]{Markup.Escape(inputFile)}[/]");
+            StdErr.MarkupLine($"[red][[ERROR]][/] Invalid PDF file: [red underline]{Markup.Escape(inputFile)}[/]");
             return 1;
         }
 
@@ -48,16 +45,16 @@ public class ResizeCommand(IPdfService pdfService) : AsyncCommand<ResizeSettings
                     new TaskDescriptionColumn(),
                     new ProgressBarColumn
                     {
-                        CompletedStyle = new Style(_processingAccentColor),
-                        FinishedStyle = new Style(_finishedAccentColor)
+                        CompletedStyle = new Style(ColorHelper.ProcessingAccentColor),
+                        FinishedStyle = new Style(ColorHelper.FinishedAccentColor)
                     },
                     new PercentageColumn
                     {
-                        CompletedStyle = new Style(_finishedAccentColor),
+                        CompletedStyle = new Style(ColorHelper.FinishedAccentColor),
                     },
                     new SpinnerColumn
                     {
-                        Style = new Style(_processingAccentColor),
+                        Style = new Style(ColorHelper.ProcessingAccentColor),
                     },
                     new ElapsedTimeColumn(),
                 ])
@@ -83,15 +80,15 @@ public class ResizeCommand(IPdfService pdfService) : AsyncCommand<ResizeSettings
         // 显示生成中的错误
         if (!errors.IsEmpty)
         {
-            AnsiConsole.MarkupLine($"[red][[ERROR]][/] Page processing completed with [red bold]{errors.Count}[/] errors.");
+            StdErr.MarkupLine($"[red][[ERROR]][/] Page processing completed with [red bold]{errors.Count}[/] errors.");
             if (hasCriticalFailure)
-                AnsiConsole.MarkupLine("[red][[ERROR]][/] Including [bold]CRITICAL ERROR[/].");
-            AnsiConsole.Write(new Rule("[red]Page Failures[/]").LeftJustified());
+                StdErr.MarkupLine("[red][[ERROR]][/] Including [bold]CRITICAL ERROR[/].");
+            StdErr.Write(new Rule("[red]Page Failures[/]").LeftJustified());
             foreach (var (ctxStr, exception) in errors)
             {
-                AnsiConsole.MarkupLine($"[gray bold]Context:[/] [underline]{Markup.Escape(ctxStr)}[/]");
-                AnsiConsole.WriteException(exception, ExceptionFormats.ShortenEverything);
-                AnsiConsole.WriteLine();
+                StdErr.MarkupLine($"[gray bold]Context:[/] [underline]{Markup.Escape(ctxStr)}[/]");
+                StdErr.WriteException(exception, ExceptionFormats.ShortenEverything);
+                StdErr.WriteLine();
             }
             return 1;
         }
@@ -108,8 +105,8 @@ public class ResizeCommand(IPdfService pdfService) : AsyncCommand<ResizeSettings
             }
             catch (Exception ex)
             {
-                AnsiConsole.MarkupLine($"[red][[ERROR]][/] Error overwriting original file:");
-                AnsiConsole.WriteException(ex, ExceptionFormats.ShortenEverything);
+                StdErr.MarkupLine($"[red][[ERROR]][/] Error overwriting original file:");
+                StdErr.WriteException(ex, ExceptionFormats.ShortenEverything);
                 return 1;
             }
         }
@@ -117,7 +114,7 @@ public class ResizeCommand(IPdfService pdfService) : AsyncCommand<ResizeSettings
         // 保存但不覆盖：直接使用临时文件。
         string outputLink = MarkupHelper.FileLinkMarkup(finalPath);
         string actionText = settings.Overwrite ? "Overwritten" : "Saved";
-        AnsiConsole.MarkupLine($"[green][[SUCCESS]][/] Modified file {actionText} to: {outputLink}");
+        AnsiConsole.MarkupLine($"[green][[SUCCESS]][/] Modified file {actionText} to: [green underline]{outputLink}[/]");
         return 0;
     }
 }

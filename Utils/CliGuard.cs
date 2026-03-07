@@ -26,14 +26,14 @@ public static class CliGuard
         catch (TExpected)
         {
             // 场景 1：预期错误 -> 打印用户定义的友好信息（不带堆栈，不带原异常信息）
-            AnsiConsole.MarkupLine($"[red][[ERROR]][/] {Markup.Escape(userMessage)}");
+            StdErr.MarkupLine($"[red][[ERROR]][/] {Markup.Escape(userMessage)}");
             return (false, default);
         }
         catch (Exception ex)
         {
             // 场景 2：意外崩溃 -> 甩出完整堆栈供开发者调试
-            AnsiConsole.MarkupLine("[red][[ERROR]][/] Unexpected Error Happened:");
-            AnsiConsole.WriteException(ex, ExceptionFormats.ShortenEverything);
+            StdErr.MarkupLine("[red][[ERROR]][/] Unexpected Error Happened:");
+            StdErr.WriteException(ex, ExceptionFormats.ShortenEverything);
             return (false, default);
         }
     }
@@ -53,13 +53,13 @@ public static class CliGuard
         }
         catch (TExpected)
         {
-            AnsiConsole.MarkupLine($"[red][[ERROR]][/] {Markup.Escape(userMessage)}");
+            StdErr.MarkupLine($"[red][[ERROR]][/] {Markup.Escape(userMessage)}");
             return false;
         }
         catch (Exception ex)
         {
-            AnsiConsole.MarkupLine("[red][[ERROR]][/] Unexpected Error Happened:");
-            AnsiConsole.WriteException(ex, ExceptionFormats.ShortenEverything);
+            StdErr.MarkupLine("[red][[ERROR]][/] Unexpected Error Happened:");
+            StdErr.WriteException(ex, ExceptionFormats.ShortenEverything);
             return false;
         }
     }

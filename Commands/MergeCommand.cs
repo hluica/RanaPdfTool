@@ -24,9 +24,6 @@ public class MergeCommand(
     private readonly IPdfService _pdfService = pdfService;
     private readonly IImageService _imageService = imageService;
 
-    private static readonly Color _processingAccentColor = ColorHelper.GetWindowsAccentColor(Color.Yellow);
-    private static readonly Color _finishedAccentColor = ColorHelper.GetWindowsAccentColor(Color.Green);
-
     private static readonly int _cpuCount = Math.Max(1, Environment.ProcessorCount - 1); // 保留一个核心给系统和UI
     private static readonly int _boundedCapacity = Math.Clamp(_cpuCount * 2, 10, 50); // 并行通道的容量，防止OOM
 
@@ -74,7 +71,7 @@ public class MergeCommand(
 
         if (!Directory.Exists(sourceDir))
         {
-            AnsiConsole.MarkupLine($"[red][[ERROR]][/] Source directory not found: [red underline]{Markup.Escape(sourceDir)}[/]");
+            StdErr.MarkupLine($"[red][[ERROR]][/] Source directory not found: [red underline]{Markup.Escape(sourceDir)}[/]");
             return 1;
         }
 
@@ -99,7 +96,7 @@ public class MergeCommand(
             // 边界检查：检查是否存在与目标文件“同名”的文件夹
             if (Directory.Exists(rawDestPath))
             {
-                AnsiConsole.MarkupLine($"[red][[ERROR]][/] Cannot create file [red underline]{Markup.Escape(Path.GetFileName(rawDestPath))}[/]. A folder with the same name already exists at destination.");
+                StdErr.MarkupLine($"[red][[ERROR]][/] Cannot create file [red underline]{Markup.Escape(Path.GetFileName(rawDestPath))}[/]. A folder with the same name already exists at destination.");
                 return 1;
             }
 
@@ -135,7 +132,7 @@ public class MergeCommand(
             // 边界检查：检查该路径是否已经是一个“文件”了
             if (File.Exists(rawDestPath))
             {
-                AnsiConsole.MarkupLine($"[red][[ERROR]][/] Destination path [red underline]{Markup.Escape(rawDestPath)}[/] exists and is a file. Please specify a directory or a new .pdf filename.");
+                StdErr.MarkupLine($"[red][[ERROR]][/] Destination path [red underline]{Markup.Escape(rawDestPath)}[/] exists and is a file. Please specify a directory or a new .pdf filename.");
                 return 1;
             }
 
@@ -190,8 +187,8 @@ public class MergeCommand(
         }
         catch (Exception ex)
         {
-            AnsiConsole.MarkupLine($"[red][[ERROR]][/] Unexpected Error Happened:");
-            AnsiConsole.WriteException(ex, ExceptionFormats.ShortenEverything);
+            StdErr.MarkupLine($"[red][[ERROR]][/] Unexpected Error Happened:");
+            StdErr.WriteException(ex, ExceptionFormats.ShortenEverything);
             return 1;
         }
 
@@ -216,16 +213,16 @@ public class MergeCommand(
                     new TaskDescriptionColumn(),
                     new ProgressBarColumn
                     {
-                        CompletedStyle = new Style(_processingAccentColor),
-                        FinishedStyle = new Style(_finishedAccentColor)
+                        CompletedStyle = new Style(ColorHelper.ProcessingAccentColor),
+                        FinishedStyle = new Style(ColorHelper.FinishedAccentColor)
                     },
                     new PercentageColumn
                     {
-                        CompletedStyle = new Style(_finishedAccentColor),
+                        CompletedStyle = new Style(ColorHelper.FinishedAccentColor),
                     },
                     new SpinnerColumn
                     {
-                        Style = new Style(_processingAccentColor),
+                        Style = new Style(ColorHelper.ProcessingAccentColor),
                     },
                     new ElapsedTimeColumn(),
                 ])
@@ -241,9 +238,10 @@ public class MergeCommand(
                         .ToList();
                     // 扁平化所有文件项，方便分发
                     var rawItems = allFileLists
-                        .SelectMany(list => list.Select(
-                            (file, index) => new LoadJob(list, index, file)))
-                    .ToList();
+                        .SelectMany(list => list
+                            .Select((file, index)
+                                => new LoadJob(list, index, file)))
+                        .ToList();
 
                     prepTask.MaxValue = rawItems.Count;
 
@@ -573,7 +571,7 @@ public class MergeCommand(
         // --- 结果汇总 ---
         if (errors.Count == 0)
         {
-            AnsiConsole.MarkupLine($"[green][[SUCCESS]][/] Successfully created: {finalPdfLink}");
+            AnsiConsole.MarkupLine($"[green][[SUCCESS]][/] Successfully created: [green underline]{finalPdfLink}[/]");
             return 0;
         }
         else
@@ -582,17 +580,16 @@ public class MergeCommand(
             if (File.Exists(finalPdfPath))
                 AnsiConsole.MarkupLine($"[yellow][[WARNING]][/] PDF created with warnings at: {finalPdfLink}");
 
-            AnsiConsole.MarkupLine($"[red][[ERROR]][/] Completed with [red bold]{errors.Count}[/] errors.");
+            StdErr.MarkupLine($"[red][[ERROR]][/] Completed with [red bold]{errors.Count}[/] errors.");
             if (hasCriticalFailure)
-                AnsiConsole.MarkupLine("[red][[ERROR]][/] Including [bold]CRITICAL ERROR[/].");
+                StdErr.MarkupLine("[red][[ERROR]][/] Including [bold]CRITICAL ERROR[/].");
 
-            AnsiConsole.Write(new Rule("[red]Merge Failures[/]").LeftJustified());
-
+            StdErr.Write(new Rule("[red]Merge Failures[/]").LeftJustified());
             foreach (var (ctxName, exception) in errors)
             {
-                AnsiConsole.MarkupLine($"[gray bold]Item:[/] [underline]{Markup.Escape(ctxName)}[/]");
-                AnsiConsole.WriteException(exception, ExceptionFormats.ShortenEverything);
-                AnsiConsole.WriteLine();
+                StdErr.MarkupLine($"[gray bold]Item:[/] [underline]{Markup.Escape(ctxName)}[/]");
+                StdErr.WriteException(exception, ExceptionFormats.ShortenEverything);
+                StdErr.WriteLine();
             }
             return 1;
         }
