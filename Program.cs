@@ -55,8 +55,8 @@ public static class Program
 
             _ = config.SetExceptionHandler((ex, _) =>
             {
-                StdErr.Console.MarkupLine("[red][[ERROR]][/] [white]Unexpected Error Happened:[/]");
-                StdErr.Console.WriteException(ex, ExceptionFormats.ShortenEverything);
+                AnsiConsole.Error.MarkupLine("[red][[ERROR]][/] [white]Unexpected Error Happened:[/]");
+                AnsiConsole.Error.WriteException(ex, ExceptionFormats.ShortenEverything);
 
                 // -1: exceptions handled by framework automatically; 1: exceptions handled in program manually.
                 return -1;

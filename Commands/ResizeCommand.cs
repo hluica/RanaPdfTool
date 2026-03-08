@@ -24,7 +24,7 @@ public class ResizeCommand(IPdfService pdfService) : AsyncCommand<ResizeSettings
 
         if (!File.Exists(inputFile) || !Path.GetExtension(inputFile).Equals(".pdf", StringComparison.CurrentCultureIgnoreCase))
         {
-            StdErr.Console.MarkupLine($"[red][[ERROR]][/] Invalid PDF file: [red underline]{Markup.Escape(inputFile)}[/]");
+            AnsiConsole.Error.MarkupLine($"[red][[ERROR]][/] Invalid PDF file: [red underline]{Markup.Escape(inputFile)}[/]");
             return 1;
         }
 
@@ -80,15 +80,15 @@ public class ResizeCommand(IPdfService pdfService) : AsyncCommand<ResizeSettings
         // 显示生成中的错误
         if (!errors.IsEmpty)
         {
-            StdErr.Console.MarkupLine($"[red][[ERROR]][/] Page processing completed with [red bold]{errors.Count}[/] errors.");
+            AnsiConsole.Error.MarkupLine($"[red][[ERROR]][/] Page processing completed with [red bold]{errors.Count}[/] errors.");
             if (hasCriticalFailure)
-                StdErr.Console.MarkupLine("[red][[ERROR]][/] Including [bold]CRITICAL ERROR[/].");
-            StdErr.Console.Write(new Rule("[red]Page Failures[/]").LeftJustified());
+                AnsiConsole.Error.MarkupLine("[red][[ERROR]][/] Including [bold]CRITICAL ERROR[/].");
+            AnsiConsole.Error.Write(new Rule("[red]Page Failures[/]").LeftJustified());
             foreach (var (ctxStr, exception) in errors)
             {
-                StdErr.Console.MarkupLine($"[gray bold]Context:[/] [underline]{Markup.Escape(ctxStr)}[/]");
-                StdErr.Console.WriteException(exception, ExceptionFormats.ShortenEverything);
-                StdErr.Console.WriteLine();
+                AnsiConsole.Error.MarkupLine($"[gray bold]Context:[/] [underline]{Markup.Escape(ctxStr)}[/]");
+                AnsiConsole.Error.WriteException(exception, ExceptionFormats.ShortenEverything);
+                AnsiConsole.Error.WriteLine();
             }
             return 1;
         }
@@ -105,8 +105,8 @@ public class ResizeCommand(IPdfService pdfService) : AsyncCommand<ResizeSettings
             }
             catch (Exception ex)
             {
-                StdErr.Console.MarkupLine($"[red][[ERROR]][/] Error overwriting original file:");
-                StdErr.Console.WriteException(ex, ExceptionFormats.ShortenEverything);
+                AnsiConsole.Error.MarkupLine($"[red][[ERROR]][/] Error overwriting original file:");
+                AnsiConsole.Error.WriteException(ex, ExceptionFormats.ShortenEverything);
                 return 1;
             }
         }
