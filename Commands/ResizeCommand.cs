@@ -24,7 +24,7 @@ public class ResizeCommand(IPdfService pdfService) : AsyncCommand<ResizeSettings
 
         if (!File.Exists(inputFile) || !Path.GetExtension(inputFile).Equals(".pdf", StringComparison.CurrentCultureIgnoreCase))
         {
-            StdErr.MarkupLine($"[red][[ERROR]][/] Invalid PDF file: [red underline]{Markup.Escape(inputFile)}[/]");
+            StdErr.Console.MarkupLine($"[red][[ERROR]][/] Invalid PDF file: [red underline]{Markup.Escape(inputFile)}[/]");
             return 1;
         }
 
@@ -80,15 +80,15 @@ public class ResizeCommand(IPdfService pdfService) : AsyncCommand<ResizeSettings
         // 显示生成中的错误
         if (!errors.IsEmpty)
         {
-            StdErr.MarkupLine($"[red][[ERROR]][/] Page processing completed with [red bold]{errors.Count}[/] errors.");
+            StdErr.Console.MarkupLine($"[red][[ERROR]][/] Page processing completed with [red bold]{errors.Count}[/] errors.");
             if (hasCriticalFailure)
-                StdErr.MarkupLine("[red][[ERROR]][/] Including [bold]CRITICAL ERROR[/].");
-            StdErr.Write(new Rule("[red]Page Failures[/]").LeftJustified());
+                StdErr.Console.MarkupLine("[red][[ERROR]][/] Including [bold]CRITICAL ERROR[/].");
+            StdErr.Console.Write(new Rule("[red]Page Failures[/]").LeftJustified());
             foreach (var (ctxStr, exception) in errors)
             {
-                StdErr.MarkupLine($"[gray bold]Context:[/] [underline]{Markup.Escape(ctxStr)}[/]");
-                StdErr.WriteException(exception, ExceptionFormats.ShortenEverything);
-                StdErr.WriteLine();
+                StdErr.Console.MarkupLine($"[gray bold]Context:[/] [underline]{Markup.Escape(ctxStr)}[/]");
+                StdErr.Console.WriteException(exception, ExceptionFormats.ShortenEverything);
+                StdErr.Console.WriteLine();
             }
             return 1;
         }
@@ -105,8 +105,8 @@ public class ResizeCommand(IPdfService pdfService) : AsyncCommand<ResizeSettings
             }
             catch (Exception ex)
             {
-                StdErr.MarkupLine($"[red][[ERROR]][/] Error overwriting original file:");
-                StdErr.WriteException(ex, ExceptionFormats.ShortenEverything);
+                StdErr.Console.MarkupLine($"[red][[ERROR]][/] Error overwriting original file:");
+                StdErr.Console.WriteException(ex, ExceptionFormats.ShortenEverything);
                 return 1;
             }
         }

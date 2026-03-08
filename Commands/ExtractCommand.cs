@@ -26,7 +26,7 @@ public class ExtractCommand(IPdfService pdfService) : AsyncCommand<ExtractSettin
 
         if (!File.Exists(inputFile) || !Path.GetExtension(inputFile).Equals(".pdf", StringComparison.CurrentCultureIgnoreCase))
         {
-            StdErr.MarkupLine($"[red][[ERROR]][/] Invalid PDF file: [red underline]{Markup.Escape(inputFile)}[/]");
+            StdErr.Console.MarkupLine($"[red][[ERROR]][/] Invalid PDF file: [red underline]{Markup.Escape(inputFile)}[/]");
             return 1;
         }
 
@@ -99,15 +99,15 @@ public class ExtractCommand(IPdfService pdfService) : AsyncCommand<ExtractSettin
         }
         else
         {
-            StdErr.MarkupLine($"[red][[ERROR]][/] Extraction completed with [red bold]{errors.Count}[/] errors.");
+            StdErr.Console.MarkupLine($"[red][[ERROR]][/] Extraction completed with [red bold]{errors.Count}[/] errors.");
             if (hasCriticalFailure)
-                StdErr.MarkupLine("[red][[ERROR]][/] Including [bold]CRITICAL ERROR[/].");
-            StdErr.Write(new Rule("[red]Extract Failures[/]").LeftJustified());
+                StdErr.Console.MarkupLine("[red][[ERROR]][/] Including [bold]CRITICAL ERROR[/].");
+            StdErr.Console.Write(new Rule("[red]Extract Failures[/]").LeftJustified());
             foreach (var (ctxStr, exception) in errors)
             {
-                StdErr.MarkupLine($"[gray bold]Context:[/] [underline]{Markup.Escape(ctxStr)}[/]");
-                StdErr.WriteException(exception, ExceptionFormats.ShortenEverything);
-                StdErr.WriteLine();
+                StdErr.Console.MarkupLine($"[gray bold]Context:[/] [underline]{Markup.Escape(ctxStr)}[/]");
+                StdErr.Console.WriteException(exception, ExceptionFormats.ShortenEverything);
+                StdErr.Console.WriteLine();
             }
             return 1;
         }

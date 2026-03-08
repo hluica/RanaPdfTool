@@ -71,7 +71,7 @@ public class MergeCommand(
 
         if (!Directory.Exists(sourceDir))
         {
-            StdErr.MarkupLine($"[red][[ERROR]][/] Source directory not found: [red underline]{Markup.Escape(sourceDir)}[/]");
+            StdErr.Console.MarkupLine($"[red][[ERROR]][/] Source directory not found: [red underline]{Markup.Escape(sourceDir)}[/]");
             return 1;
         }
 
@@ -96,7 +96,7 @@ public class MergeCommand(
             // 边界检查：检查是否存在与目标文件“同名”的文件夹
             if (Directory.Exists(rawDestPath))
             {
-                StdErr.MarkupLine($"[red][[ERROR]][/] Cannot create file [red underline]{Markup.Escape(Path.GetFileName(rawDestPath))}[/]. A folder with the same name already exists at destination.");
+                StdErr.Console.MarkupLine($"[red][[ERROR]][/] Cannot create file [red underline]{Markup.Escape(Path.GetFileName(rawDestPath))}[/]. A folder with the same name already exists at destination.");
                 return 1;
             }
 
@@ -132,7 +132,7 @@ public class MergeCommand(
             // 边界检查：检查该路径是否已经是一个“文件”了
             if (File.Exists(rawDestPath))
             {
-                StdErr.MarkupLine($"[red][[ERROR]][/] Destination path [red underline]{Markup.Escape(rawDestPath)}[/] exists and is a file. Please specify a directory or a new .pdf filename.");
+                StdErr.Console.MarkupLine($"[red][[ERROR]][/] Destination path [red underline]{Markup.Escape(rawDestPath)}[/] exists and is a file. Please specify a directory or a new .pdf filename.");
                 return 1;
             }
 
@@ -187,8 +187,8 @@ public class MergeCommand(
         }
         catch (Exception ex)
         {
-            StdErr.MarkupLine($"[red][[ERROR]][/] [white]Unexpected Error Happened:[/]");
-            StdErr.WriteException(ex, ExceptionFormats.ShortenEverything);
+            StdErr.Console.MarkupLine($"[red][[ERROR]][/] [white]Unexpected Error Happened:[/]");
+            StdErr.Console.WriteException(ex, ExceptionFormats.ShortenEverything);
             return 1;
         }
 
@@ -580,16 +580,16 @@ public class MergeCommand(
             if (File.Exists(finalPdfPath))
                 AnsiConsole.MarkupLine($"[yellow][[WARNING]][/] PDF created with warnings at: {finalPdfLink}");
 
-            StdErr.MarkupLine($"[red][[ERROR]][/] Completed with [red bold]{errors.Count}[/] errors.");
+            StdErr.Console.MarkupLine($"[red][[ERROR]][/] Completed with [red bold]{errors.Count}[/] errors.");
             if (hasCriticalFailure)
-                StdErr.MarkupLine("[red][[ERROR]][/] Including [bold]CRITICAL ERROR[/].");
+                StdErr.Console.MarkupLine("[red][[ERROR]][/] Including [bold]CRITICAL ERROR[/].");
 
-            StdErr.Write(new Rule("[red]Merge Failures[/]").LeftJustified());
+            StdErr.Console.Write(new Rule("[red]Merge Failures[/]").LeftJustified());
             foreach (var (ctxName, exception) in errors)
             {
-                StdErr.MarkupLine($"[gray bold]Item:[/] [underline]{Markup.Escape(ctxName)}[/]");
-                StdErr.WriteException(exception, ExceptionFormats.ShortenEverything);
-                StdErr.WriteLine();
+                StdErr.Console.MarkupLine($"[gray bold]Item:[/] [underline]{Markup.Escape(ctxName)}[/]");
+                StdErr.Console.WriteException(exception, ExceptionFormats.ShortenEverything);
+                StdErr.Console.WriteLine();
             }
             return 1;
         }
