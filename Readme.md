@@ -1,6 +1,6 @@
 ﻿# RanaPdfTool
 
-![GitHub Release](https://img.shields.io/github/v/release/hluica/RanaPdfTool)
+[![GitHub Release](https://img.shields.io/github/v/release/hluica/RanaPdfTool)](https://github.com/hluica/RanaPdfTool/releases/latest)
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/hluica/RanaPdfTool)
 
 
