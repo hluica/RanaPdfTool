@@ -61,24 +61,22 @@ function Merge-Pdf {
     foreach ($folder in $subFolders) {
         $processing++
         Write-Host ""
-        Write-Host "`e[30;47m Now processing: $processing / $total `e[0m"
+        Write-Host "`e[30;47m  $processing / $total - $($folder.Name) `e[0m"
         Write-Host ""
 
-        $fullPath = $folder.FullName
-        $arguments = @("merge", "--source", "`"$fullPath`"", "--destination", "`"$absTarget`"", "--resize")
-
+        $arguments = @("merge", "--source", "`"$($folder.FullName)`"", "--destination", "`"$absTarget`"", "--resize")
         $processResult = Start-Process -FilePath "RanaPdfTool.exe" -ArgumentList $arguments -NoNewWindow -Wait -PassThru
         $exitCode = $processResult.ExitCode
 
         if ($exitCode -ne 0) {
-            $errorList.Add([ErrorDTO]::new($processing, $fullPath))
+            $errorList.Add([ErrorDTO]::new($processing, $folder.Name))
         }
     }
 
     $errorCount = $errorList.Count
     if ( $errorCount -gt 0) {
         Write-Host ""
-        Write-Warning "$errorCount out of $total folder(s) failed to process"
+        Write-Warning "$errorCount folder(s) out of $total failed to process"
         return $errorList
     }
 }
