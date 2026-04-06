@@ -1,8 +1,9 @@
 ﻿# RanaPdfTool
 
+[![.NET 10.0](https://img.shields.io/badge/.NET-10.0-512BD4)](https://dotnet.microsoft.com/en-us/download/dotnet/10.0)
+[![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0-blue.svg)](LICENSE.txt)
 [![GitHub Release](https://img.shields.io/github/v/release/hluica/RanaPdfTool)](https://github.com/hluica/RanaPdfTool/releases/latest)
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/hluica/RanaPdfTool)
-
 
 RanaPdfTool 是一个基于 .NET 10 的命令行工具，用于处理图片文件和PDF文件之间的转换。
 
