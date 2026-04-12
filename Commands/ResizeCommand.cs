@@ -1,6 +1,4 @@
-﻿using System.Collections.Concurrent;
-
-using RanaPdfTool.Services.Interfaces;
+﻿using RanaPdfTool.Services.Interfaces;
 using RanaPdfTool.Settings;
 using RanaPdfTool.Utils;
 
@@ -13,7 +11,7 @@ public class ResizeCommand(IPdfService pdfService) : AsyncCommand<ResizeSettings
 {
     private readonly IPdfService _pdfService = pdfService;
 
-    public override async Task<int> ExecuteAsync(CommandContext context, ResizeSettings settings, CancellationToken cancellationToken)
+    protected override async Task<int> ExecuteAsync(CommandContext context, ResizeSettings settings, CancellationToken cancellationToken)
     {
         var (fileOk, inputFile) = CliGuard.TryRun<string, ArgumentException>(
             () => PathHelper.ResolveAbsolutePath(settings.FilePath),
@@ -32,7 +30,7 @@ public class ResizeCommand(IPdfService pdfService) : AsyncCommand<ResizeSettings
         string name = Path.GetFileNameWithoutExtension(inputFile);
         string workingOutputFile = Path.Combine(dir, $"{name}_{settings.Suffix}.pdf");
 
-        var errors = new ConcurrentBag<(string context, Exception exception)>();
+        var errors = new List<(string context, Exception exception)>();
         bool hasCriticalFailure = false;
 
         // 生成临时文件
@@ -78,7 +76,7 @@ public class ResizeCommand(IPdfService pdfService) : AsyncCommand<ResizeSettings
         }
 
         // 显示生成中的错误
-        if (!errors.IsEmpty)
+        if (errors.Count is > 0)
         {
             AnsiConsole.Error.MarkupLine($"[red][[ERROR]][/] Page processing completed with [red bold]{errors.Count}[/] errors.");
             if (hasCriticalFailure)

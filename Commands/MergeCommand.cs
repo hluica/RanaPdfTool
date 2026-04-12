@@ -57,7 +57,7 @@ public class MergeCommand(
         bool Success,
         Exception? Exception);
 
-    public override async Task<int> ExecuteAsync(CommandContext context, MergeSettings settings, CancellationToken cancellationToken)
+    protected override async Task<int> ExecuteAsync(CommandContext context, MergeSettings settings, CancellationToken cancellationToken)
     {
         int jpgQuality = settings.Quality ?? 90;
 

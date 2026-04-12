@@ -1,6 +1,4 @@
-﻿using System.Collections.Concurrent;
-
-using RanaPdfTool.Services.Interfaces;
+﻿using RanaPdfTool.Services.Interfaces;
 using RanaPdfTool.Settings;
 using RanaPdfTool.Utils;
 
@@ -13,7 +11,7 @@ public class ExtractCommand(IPdfService pdfService) : AsyncCommand<ExtractSettin
 {
     private readonly IPdfService _pdfService = pdfService;
 
-    public override async Task<int> ExecuteAsync(CommandContext context, ExtractSettings settings, CancellationToken cancellationToken)
+    protected override async Task<int> ExecuteAsync(CommandContext context, ExtractSettings settings, CancellationToken cancellationToken)
     {
         int jpgQuality = settings.Quality ?? 90;
 
@@ -46,7 +44,7 @@ public class ExtractCommand(IPdfService pdfService) : AsyncCommand<ExtractSettin
         _ = Directory.CreateDirectory(finalOutputDir);
         string finalOutputLink = MarkupHelper.FileLinkMarkup(finalOutputDir);
 
-        var errors = new ConcurrentBag<(string context, Exception exception)>();
+        var errors = new List<(string context, Exception exception)>();
         bool hasCriticalFailure = false;
 
         try
@@ -92,7 +90,7 @@ public class ExtractCommand(IPdfService pdfService) : AsyncCommand<ExtractSettin
             hasCriticalFailure = true;
         }
 
-        if (errors.IsEmpty)
+        if (errors.Count is 0)
         {
             AnsiConsole.MarkupLine($"[green][[SUCCESS]][/] Images extracted to: [green underline]{finalOutputLink}[/]");
             return 0;
