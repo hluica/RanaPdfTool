@@ -1,4 +1,4 @@
-﻿# RanaPdfTool
+# RanaPdfTool
 
 [![.NET 10.0](https://img.shields.io/badge/.NET-10.0-512BD4)](https://dotnet.microsoft.com/en-us/download/dotnet/10.0)
 [![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0-blue.svg)](LICENSE.txt)
@@ -133,6 +133,7 @@ dotnet tool install RanaPdfTool --global --add-source <Source_Path> [--version <
 
 | 版本号 | 发布日期 | 更新内容                                                                                                                       |
 | ------ | -------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| v4.2.7 | 26-10-29 | 更新依赖至最新版本；适配 Spectre.Console.Cli 0.57.2 的 API 变更；升级 SixLabors.ImageSharp 至 4.1.3 并补充许可证说明；更新 readme。 |
 | v4.2.6 | 26-04-12 | 更新依赖并更新主CommandExecute方法；更新readme。                                                                               |
 | v4.2.5 | 26-04-05 | 优化 AnsiConsole 扩展类；改进辅助脚本。                                                                                        |
 | v4.2.4 | 26-03-09 | 优化错误信息输出后端；调整输出信息细节。                                                                                       |
@@ -164,3 +165,5 @@ dotnet tool install RanaPdfTool --global --add-source <Source_Path> [--version <
 ## 许可证
 
 由于 iText 的许可证限制，本项目使用 [AGPLv3](LICENSE.txt)。
+
+本项目依赖的 [SixLabors.ImageSharp](https://github.com/SixLabors/ImageSharp) 4.x 采用 Six Labors Split License。自 4.x 起，直接依赖该库的项目在构建 Release 版本或执行 `dotnet pack` 时需要有效的 Six Labors 许可证：可将 `sixlabors.lic` 放在项目根目录，或通过 MSBuild 属性 `SixLaborsLicenseKey` 提供。Debug 构建在缺少许可证时仍可完成，但会输出警告。许可证资格与免费社区许可证的申请方式请参阅 [Six Labors 许可页面](https://sixlabors.com/pricing/)。

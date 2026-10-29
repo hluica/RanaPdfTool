@@ -1,4 +1,4 @@
-﻿using System.Threading.Channels;
+using System.Threading.Channels;
 
 using Microsoft.IO;
 
@@ -57,7 +57,7 @@ public class MergeCommand(
         bool Success,
         Exception? Exception);
 
-    protected override async Task<int> ExecuteAsync(CommandContext context, MergeSettings settings, CancellationToken cancellationToken)
+    public override async Task<int> ExecuteAsync(CommandContext context, MergeSettings settings, CancellationToken cancellationToken)
     {
         int jpgQuality = settings.Quality ?? 90;
 

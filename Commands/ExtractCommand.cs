@@ -1,4 +1,4 @@
-﻿using RanaPdfTool.Services.Interfaces;
+using RanaPdfTool.Services.Interfaces;
 using RanaPdfTool.Settings;
 using RanaPdfTool.Utils;
 
@@ -11,7 +11,7 @@ public class ExtractCommand(IPdfService pdfService) : AsyncCommand<ExtractSettin
 {
     private readonly IPdfService _pdfService = pdfService;
 
-    protected override async Task<int> ExecuteAsync(CommandContext context, ExtractSettings settings, CancellationToken cancellationToken)
+    public override async Task<int> ExecuteAsync(CommandContext context, ExtractSettings settings, CancellationToken cancellationToken)
     {
         int jpgQuality = settings.Quality ?? 90;
 

@@ -1,4 +1,4 @@
-﻿using RanaPdfTool.Services.Interfaces;
+using RanaPdfTool.Services.Interfaces;
 using RanaPdfTool.Settings;
 using RanaPdfTool.Utils;
 
@@ -11,7 +11,7 @@ public class ResizeCommand(IPdfService pdfService) : AsyncCommand<ResizeSettings
 {
     private readonly IPdfService _pdfService = pdfService;
 
-    protected override async Task<int> ExecuteAsync(CommandContext context, ResizeSettings settings, CancellationToken cancellationToken)
+    public override async Task<int> ExecuteAsync(CommandContext context, ResizeSettings settings, CancellationToken cancellationToken)
     {
         var (fileOk, inputFile) = CliGuard.TryRun<string, ArgumentException>(
             () => PathHelper.ResolveAbsolutePath(settings.FilePath),
